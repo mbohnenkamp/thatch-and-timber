@@ -1,4 +1,4 @@
-export const VERSION = '5.5';
+export const VERSION = '5.6';
 export const ISSUES_URL = 'https://github.com/mbohnenkamp/thatch-and-timber/issues/new';
 
 // Kartengrößen in Feldern; alte Spielstände ohne Angabe sind 64
@@ -51,7 +51,15 @@ export const CART = { capacity: 6, speed: 4.2, perLevel: [0, 1, 2] };
 
 export const ITEMS = { wood: 'Holz', stone: 'Stein', food: 'Nahrung', grain: 'Getreide', flour: 'Mehl', bread: 'Brot', planks: 'Bretter', tools: 'Werkzeug', ore: 'Erz', coal: 'Kohle', iron: 'Eisen' };
 // Berufe ohne Werkzeug
-export const NO_TOOL_JOBS = ['Träger', 'Bauarbeiter', 'Werkzeugmacher', 'Bergmann', 'Schmelzer', 'Händler'];
+export const NO_TOOL_JOBS = ['Träger', 'Bauarbeiter', 'Werkzeugmacher', 'Bergmann', 'Schmelzer', 'Händler', 'Wirt'];
+
+// Zufriedenheit: Punkte je Quelle; cover = höchstens so viele Punkte, wenn alle Wohnhäuser im Umkreis liegen
+export const HAPPINESS = {
+  base: 50, perFood: 5, hunger: 30, crowded: 5, effect: 0.15,
+  cover: { well: 10, tavern: 15, chapel: 10, plaza: 10 },
+};
+// Fest beim Aufstieg: so viele Spielsekunden tanzen alle
+export const FEST_TIME = 20;
 
 // Tauschwert am Markt; der Händler nimmt die Hälfte als Aufschlag
 export const TRADE_VALUE = { wood: 1, stone: 2, food: 1, grain: 1, flour: 2, bread: 3, planks: 2, tools: 8, ore: 2, coal: 2, iron: 4 };
@@ -161,9 +169,22 @@ export const BUILDINGS = {
   townhall: {
     name: 'Rathaus', group: 'base', unlock: 4, cost: { planks: 10, stone: 16, iron: 4 }, buildTime: 30, unique: true, speedBonus: 0.15,
   },
+  // Wirt schenkt aus: verbraucht 1 Brot je Ausschank, danach ist das Wirtshaus serveTime Sekunden offen
+  tavern: {
+    name: 'Wirtshaus', group: 'town', unlock: 1, cost: { wood: 8, stone: 4, planks: 4 }, buildTime: 16, job: 'Wirt',
+    consumes: { bread: 1 }, serves: true, workTime: 30, serveTime: 90, radius: 10,
+    upgrades: [{ planks: 4, stone: 4 }, { planks: 6, stone: 6 }],
+  },
+  // Kein Arbeiter: Wohnhäuser im Umkreis sind zufriedener
+  chapel: {
+    name: 'Kapelle', group: 'town', unlock: 2, cost: { stone: 20, planks: 6 }, buildTime: 24, radius: 14,
+  },
+  plaza: {
+    name: 'Marktplatz', group: 'town', unlock: 3, cost: { stone: 16, wood: 4 }, buildTime: 18, radius: 9,
+  },
   // Krönung der Stadt: kein Arbeiter, nur einmal; fertig gebaut wird die Stadt zur Großstadt
   monument: {
-    name: 'Denkmal', group: 'base', unlock: 4, cost: { stone: 30, planks: 20, iron: 8 }, buildTime: 60, unique: true,
+    name: 'Denkmal', group: 'town', unlock: 4, cost: { stone: 30, planks: 20, iron: 8 }, buildTime: 60, unique: true,
   },
   // Vom Ufer geradeaus übers Wasser (höchstens span Felder); am anderen Ufer ein kleines Gebiet als Brückenkopf
   bridge: {
@@ -172,7 +193,7 @@ export const BUILDINGS = {
 };
 
 // Bauleiste: Gruppen in dieser Reihenfolge
-export const BUILD_GROUPS = { base: 'Grundbau', food: 'Nahrung', craft: 'Handwerk' };
+export const BUILD_GROUPS = { base: 'Grundbau', food: 'Nahrung', craft: 'Handwerk', town: 'Leben' };
 
 export const MAPS = {
   forest: {

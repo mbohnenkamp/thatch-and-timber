@@ -56,6 +56,9 @@ export function releaseJob(s) {
 }
 
 export function updateSettler(game, s, dt) {
+  // Beim Fest tanzen alle, wo sie gerade sind; die Arbeit geht danach weiter
+  s.dancing = game.festActive && !s.cart;
+  if (s.dancing) return;
   // Hunger bremst nur die Erntearbeiter
   if (game.hungry && s.workplace && outputItem(s.workplace)) dt *= 0.5;
   if (!s.step) {
@@ -144,6 +147,7 @@ function plan(game, s) {
     const def = BUILDINGS[s.workplace.type];
     if (def.fields) planFarmer(game, s);
     else if (def.sheep) planShepherd(game, s);
+    else if (def.serves) planInnkeeper(game, s);
     else if (!def.resource && (def.consumes || def.trade)) planProcessor(game, s);
     else planWorker(game, s);
   }
@@ -343,6 +347,28 @@ const PROCESS = {
   smelter: { text: 'Schmilzt Eisen', sound: 'hammer' },
   market: { text: 'Handelt', sound: 'drop' },
 };
+
+// Wirt: holt Brot und schenkt aus; das Wirtshaus bleibt danach eine Weile offen
+function planInnkeeper(game, s) {
+  const b = s.workplace;
+  const def = BUILDINGS[b.type];
+  if (!hasInputs(b)) {
+    s.steps.push(go(b.x, b.z, true, b.servedUntil > game.time ? 'Schenkt den letzten Rest aus' : 'Wartet auf Brot'), { type: 'work', time: 3, rest: true, face: b });
+    return;
+  }
+  s.steps.push(
+    go(b.x, b.z, true, 'Geht an die Arbeit'),
+    {
+      type: 'call',
+      fn: () => {
+        if (b.removed || !hasInputs(b)) return;
+        useInputs(b);
+        b.servedUntil = game.time + def.serveTime;
+      },
+    },
+    { type: 'work', time: def.workTime, face: b, status: 'Schenkt aus', sound: 'drop' },
+  );
+}
 
 const missing = (b) => Object.entries(recipe(b)).filter(([k, n]) => (b.inputs[k] || 0) < n).map(([k]) => ITEMS[k]).join(' und ');
 // Liegt alles für einen Arbeitsgang bereit oder im Lager?

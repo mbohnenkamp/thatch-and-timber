@@ -1,5 +1,6 @@
 import { BUILDINGS, MAX_LEVEL, OUTPUT_CAP, ITEMS, TRADE_VALUE, TRADE_FEE, WORK_SPEED } from '../config.js';
 import { RANKS, isUnlocked } from '../goals.js';
+import { happinessFactor } from '../happiness.js';
 
 export function createBuilding(id, type, x, z, done) {
   return {
@@ -79,10 +80,10 @@ export function tradeRate(give, get) {
   return a >= b ? { give: 1, get: Math.floor(a / b) } : { give: Math.ceil(b / a), get: 1 };
 }
 
-// Arbeitstempo je Ausbaustufe, mit fertigem Rathaus schneller
+// Arbeitstempo je Ausbaustufe, mit fertigem Rathaus schneller, je nach Zufriedenheit schneller oder langsamer
 export function workSpeed(game, b) {
   const bonus = game.buildings.some((t) => t.type === 'townhall' && t.done && !t.removed) ? 1 + BUILDINGS.townhall.speedBonus : 1;
-  return WORK_SPEED[b.level - 1] * bonus;
+  return WORK_SPEED[b.level - 1] * bonus * happinessFactor(game);
 }
 
 export const outputItem = (b) => (BUILDINGS[b.type].trade ? b.trade?.get : BUILDINGS[b.type].produces);

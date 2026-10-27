@@ -65,6 +65,11 @@ const TIPS = [
     check: (g) => (g.time > 120 && g.settlers.length < g.housing && g.foodPoints() < growthFood(g) && g.season.key !== 'winter' ? {} : null),
   },
   {
+    id: 'mood-low',
+    text: 'Die Siedler sind unzufrieden und arbeiten langsamer. Abwechslung beim Essen hilft (Sammler, Fischer, Schäferei, Bäckerei), dazu Brunnen, ein Wirtshaus mit Brot, eine Kapelle oder ein Marktplatz nahe den Wohnhäusern. Fahre über die Zufriedenheit oben, um zu sehen, was fehlt.',
+    check: (g) => (g.time > 300 && g.happiness < 40 ? {} : null),
+  },
+  {
     id: 'housing-full',
     text: 'Alle Wohnplätze sind belegt, deshalb kommen keine neuen Siedler. Baue ein Wohnhaus oder baue eines aus (Stufe 2 und 3 bieten mehr Platz).',
     check: (g) => (g.settlers.length >= g.housing && !of(g, 'house').some(isSiteOpen) ? {} : null),

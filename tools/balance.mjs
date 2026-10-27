@@ -39,6 +39,7 @@ for (const [text, t] of goalAt) console.log(`  ${fmt(t)}  ${text}`);
 const open = GOALS.slice(goalAt.length).map((x) => x.text);
 if (open.length) console.log(`  offen: ${open.join(' | ')}`);
 console.log(`\nHunger gesamt ${(hungry / 60).toFixed(1)} min, davon im Winter ${(hungryWinter / 60).toFixed(1)} min; kleinster Nahrungsvorrat nach 10 min: ${minFood}`);
+console.log(`Zufriedenheit am Ende ${Math.round(g.happiness)} %`);
 console.log(`Ende: ${g.settlers.length} Siedler, Wohnraum ${g.housing}, Gebäude ${g.buildings.length}, Stufe ${rankOf(g)}`);
 const sites = g.buildings.filter((b) => isSite(b));
 if (sites.length) console.log('Offene Baustellen:', sites.map((b) => `${b.type}@${b.x},${b.z} geliefert ${JSON.stringify(b.delivered)} unterwegs ${JSON.stringify(b.incoming)} Bauer ${b.builders.length} Fortschritt ${Math.round((b.progress || 0) * 100) / 100}`).join(' | '));

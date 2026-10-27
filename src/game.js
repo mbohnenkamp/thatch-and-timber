@@ -7,7 +7,8 @@ import {
   createBuilding, placeError, bridgeTiles, isSite, siteCost, siteNeeds, upgradeCost, housingOf, outputItem,
 } from './entities/buildings.js';
 import { updateEconomy } from './economy.js';
-import { START, BUILDINGS, WORK_RADIUS, ITEMS, GRAIN_GROW_TIME, BREAD_FOOD, ROAD, CART } from './config.js';
+import { updateHappiness } from './happiness.js';
+import { FEST_TIME, START, BUILDINGS, WORK_RADIUS, ITEMS, GRAIN_GROW_TIME, BREAD_FOOD, ROAD, CART } from './config.js';
 
 const ITEM_KEYS = Object.keys(ITEMS);
 const NAME_A = ['Eichen', 'Birken', 'Linden', 'Buchen', 'Tannen', 'Hasel', 'Erlen', 'Weiden', 'Mühl', 'Stein', 'Rosen', 'Falken', 'Hirsch', 'Kranich', 'Wolfs', 'Sonnen'];
@@ -38,6 +39,8 @@ export class Game {
     this.hungerTime = 0;
     this.cityAt = null;
     this.metroAt = null;
+    this.happiness = 50;
+    this.festUntil = 0;
     this.growthTimer = 0;
     this.checkTimer = 0;
     this.handlers = {};
@@ -612,6 +615,14 @@ export class Game {
     return this.buildings.some((b) => isSite(b) && (siteNeeds(b).length || canBuildOn(b)));
   }
 
+  // Fest beim Aufstieg: alle legen kurz die Arbeit nieder und tanzen
+  startFest() {
+    this.festUntil = this.time + FEST_TIME;
+    this.emit('fest', this.festUntil);
+  }
+
+  get festActive() { return this.time < this.festUntil; }
+
   update(dt) {
     this.time += dt;
     const before = this.season.index;
@@ -628,6 +639,7 @@ export class Game {
     for (const c of this.carts) updateSettler(this, c, dt);
     this.updateRoads(dt);
     updateEconomy(this, dt);
+    updateHappiness(this, dt);
     if (this.hungry) this.hungerTime += dt;
     updateGoals(this, dt);
     this.jobTimer = (this.jobTimer || 0) + dt;
@@ -659,6 +671,7 @@ export class Game {
       hungerTime: Math.round(this.hungerTime),
       cityAt: this.cityAt,
       metroAt: this.metroAt,
+      happiness: Math.round(this.happiness),
       nextId: this.nextId,
       resources: this.resources.map((n) => [n.amount, Math.round(n.timer * 10) / 10, n.gone ? 1 : 0]),
       buildings: this.buildings.map((b) => ({
@@ -666,6 +679,7 @@ export class Game {
         progress: b.progress, delivered: b.delivered, stock: b.stock, output: b.output, inputs: b.inputs,
         ...(b.span && { span: b.span }),
         ...(b.trade && { trade: b.trade }),
+        ...(b.servedUntil && { servedUntil: b.servedUntil }),
       })),
       roadPlans: this.roadPlans.map((p) => [p.x, p.z]),
       roads: [...this.grid.traffic].flatMap((t, i) => (t > 0 ? [[i, Math.round(t * 10) / 10, this.grid.road[i]]] : [])),
@@ -687,6 +701,7 @@ export class Game {
     g.hungerTime = d.hungerTime || 0;
     g.cityAt = d.cityAt ?? null;
     g.metroAt = d.metroAt ?? null;
+    g.happiness = d.happiness ?? 50;
     g.nextId = d.nextId;
 
     d.resources.forEach(([amount, timer, gone], i) => {
@@ -712,6 +727,7 @@ export class Game {
         // ältere Spielstände: eine Zahl für die (damals einzige) Zutat
         inputs: bd.inputs || (bd.input ? { [Object.keys(BUILDINGS[bd.type].consumes)[0]]: bd.input } : {}),
         trade: bd.trade || null,
+        servedUntil: bd.servedUntil || 0,
       });
       if (bd.stock) Object.assign(b.stock, bd.stock);
       // Spielstände von vor den Werkzeugen bekommen den Startvorrat

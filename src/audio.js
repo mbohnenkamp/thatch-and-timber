@@ -368,6 +368,11 @@ class Audio {
     }
   }
 
+  // Festmusik: schneller und dichter, mit Schellen
+  fest(seconds) {
+    if (this.ctx) this.festUntil = this.ctx.currentTime + seconds;
+  }
+
   schedule() {
     if (!this.ctx || this.ctx.state !== 'running') return;
     const now = this.ctx.currentTime;
@@ -387,7 +392,8 @@ class Audio {
     } else if (!this.nextOwl) this.nextOwl = now + 8;
 
     // Kleine Laute-Melodie: Zufallsweg über die Tonleiter, Bass auf 1 und 3
-    const beat = 60 / 84 / 2;
+    const fest = now < (this.festUntil || 0);
+    const beat = 60 / (fest ? 132 : 84) / 2;
     while (this.musicTime < now + 1) {
       const t = this.musicTime;
       const bar = Math.floor(this.step / 8) % 4;
@@ -396,14 +402,15 @@ class Audio {
         const root = [0, 5, 3, 4][bar];
         this.tone(this.music, 'triangle', (BASE / 2) * 2 ** (SCALE[root] / 12), t, 0.01, beat * 3.5, 0.35);
       }
-      if (Math.random() < (pos % 2 === 0 ? 0.85 : 0.35)) {
+      if (fest && pos % 2 === 0) this.burst(this.music, t, 0.08, 0.25, 'highpass', 6000, 6000);
+      if (Math.random() < (fest ? 0.95 : pos % 2 === 0 ? 0.85 : 0.35)) {
         this.note = Math.max(0, Math.min(SCALE.length - 1, this.note + Math.round(Math.random() * 4 - 2)));
         this.tone(this.music, 'triangle', BASE * 2 ** (SCALE[this.note] / 12), t, 0.005, beat * 1.6, 0.22);
         this.tone(this.music, 'sine', BASE * 2 * 2 ** (SCALE[this.note] / 12), t, 0.005, beat * 0.8, 0.05);
       }
       this.musicTime += beat;
       this.step++;
-      if (this.step % 64 === 0) this.musicTime += beat * 8;
+      if (this.step % 64 === 0 && !fest) this.musicTime += beat * 8;
     }
   }
 }

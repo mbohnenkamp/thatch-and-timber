@@ -119,6 +119,12 @@ export function makeBot(g) {
       const s = spot(t);
       if (s) { g.place(t, s.x, s.z); note(`baut ${BUILDINGS[t].name} (Nachschub)`); return; }
     }
+    // Für die Zufriedenheit je einmal Wirtshaus, Kapelle, Marktplatz
+    for (const t of ['tavern', 'chapel', 'plaza']) {
+      if (!isUnlocked(g, t) || of(t).length || g.settlers.length < 20 || !g.canAfford(BUILDINGS[t].cost)) continue;
+      const s = spot(t);
+      if (s) { g.place(t, s.x, s.z); note(`baut ${BUILDINGS[t].name}`); return; }
+    }
     // Großes Dorf: zweites Lagerhaus (mehr Träger) und zweite Bauhütte
     for (const t of ['warehouse', 'builderhut']) {
       if (!isUnlocked(g, 'warehouse') || of(t).length >= 2 || !g.canAfford(BUILDINGS[t].cost)) continue;

@@ -139,6 +139,19 @@ export function kitBuilding(type, level) {
       });
       extras.push(part('stall-red', 1.25, 0, 0.75, 0, 0.45));
       break;
+    case 'tavern':
+      inner = house({ width: 2, floors: [stone, wood], door: 'wall-wood-door', window: 'wall-wood-window-shutters', roof: 'roof-gable', roofColor: 'brown', chimney: true });
+      extras.push(nature('log_stack', 1.2, 0, 0.45, 0, 0.6), part('planks', -1.2, 0, 0.5, 0.3, 0.45));
+      break;
+    case 'chapel': {
+      inner = house({ floors: [stone, stone], door: 'wall-door', window: 'wall-window-small', roof: 'roof-high-gable', roofColor: 'brown' });
+      // Glockenturm hinten
+      const bell = house({ floors: [stone, stone, stone], door: stone, window: 'wall-window-small', roof: 'roof-point', roofColor: 'red' });
+      bell.scale.setScalar(0.55);
+      bell.position.set(0, 0, -0.75);
+      inner.add(bell);
+      break;
+    }
     case 'tower':
       inner = house({ floors: [stone, stone].concat(level >= 2 ? [stone] : []).concat(level >= 3 ? [wood] : []), door: 'wall-door', window: 'wall-window-small', roof: 'roof-point', roofColor: 'red' });
       break;
@@ -157,7 +170,7 @@ export function kitBuilding(type, level) {
     default:
       return null;
   }
-  if (level >= 2 && !['warehouse', 'house', 'mill', 'tower', 'townhall'].includes(type)) {
+  if (level >= 2 && !['warehouse', 'house', 'mill', 'tower', 'townhall', 'tavern'].includes(type)) {
     const annex = house({ floors: ['wall-wood'], door: 'wall-wood', window: 'wall-wood', roof: 'roof-point', roofColor: 'brown' });
     annex.scale.setScalar(0.6);
     annex.position.set(-0.85, 0, -0.3);

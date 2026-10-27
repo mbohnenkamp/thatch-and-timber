@@ -100,6 +100,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .credits { color: var(--muted); font-size: 12px; margin-top: 18px; opacity: 0.8; }
 .credits a { color: var(--accent); }
+.res.low b { color: #ff8a6a; }
 
 .btn, .continue {
   margin-top: 24px; padding: 12px 24px; border-radius: 10px;

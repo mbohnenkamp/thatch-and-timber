@@ -20,7 +20,7 @@ function loadSettings() {
 function saveSettings(st) {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(st)); } catch { /* egal */ }
 }
-import { AUTOSAVE_INTERVAL, ITEMS, BUILDINGS } from './config.js';
+import { AUTOSAVE_INTERVAL, ITEMS, BUILDINGS, FEST_TIME } from './config.js';
 
 const SEASON_TOAST = {
   spring: 'Frühling! Die Felder werden wieder bestellt, Beeren und Bäume wachsen nach.',
@@ -161,6 +161,11 @@ function start(game, isNew = false) {
       hud.toast(`Neu in der Bauleiste: ${unlocked.map((t) => BUILDINGS[t].name).join(', ')}`);
     }
     audio.play(rankUp ? 'complete' : 'arrive');
+    if (rankUp) {
+      game.startFest();
+      audio.fest(FEST_TIME / Math.max(1, speed));
+      hud.toast(`${game.townName} feiert!`);
+    }
     if (honor) hud.showHonor(game, honor);
   });
   game.on('season', (se) => { if (game.seasonsOn) hud.toast(SEASON_TOAST[se.key]); });

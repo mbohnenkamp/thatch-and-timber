@@ -175,6 +175,7 @@ export class Renderer {
     game.on('buildingChanged', (b) => { this.removeBuilding(b); this.addBuilding(b); });
     game.on('buildingRemoved', (b) => this.removeBuilding(b));
     game.on('settler', (s) => this.addSettler(s));
+    game.on('fest', () => this.showBunting());
     game.on('resource', (n) => this.updateResource(n));
 
     this.cartObjs = new Map();
@@ -595,6 +596,41 @@ export class Renderer {
     }
   }
 
+  // Wimpelketten rund um Lagerhäuser, Rathaus und Denkmal, solange das Fest dauert
+  showBunting() {
+    if (this.bunting) return;
+    const g = (this.bunting = new THREE.Group());
+    const colors = ['#c6283c', '#f2c230', '#2f6db3', '#3f9a4a'].map((c) => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
+    const pole = new THREE.MeshLambertMaterial({ color: '#6e4423' });
+    const line = new THREE.LineBasicMaterial({ color: '#3a2a1a' });
+    const flag = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-0.11, 0, 0), new THREE.Vector3(0.11, 0, 0), new THREE.Vector3(0, -0.24, 0)]);
+    const spots = this.game.buildings.filter((b) => b.done && !b.removed && ['warehouse', 'townhall', 'monument', 'plaza'].includes(b.type));
+    for (const b of spots) {
+      const cx = b.x + 0.5, cz = b.z + 0.5, r = 1.1;
+      const corners = [[-r, -r], [r, -r], [r, r], [-r, r]].map(([dx, dz]) => new THREE.Vector3(cx + dx, this.groundAt(cx + dx, cz + dz) + 1.1, cz + dz));
+      for (const c of corners) {
+        const p = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 1.1, 5), pole);
+        p.position.set(c.x, c.y - 0.55, c.z);
+        g.add(p);
+      }
+      corners.forEach((a, i) => {
+        const c = corners[(i + 1) % 4];
+        // Schnur mit leichtem Durchhang
+        const pts = Array.from({ length: 13 }, (_, k) => new THREE.Vector3().lerpVectors(a, c, k / 12).add(new THREE.Vector3(0, -Math.sin((k / 12) * Math.PI) * 0.18, 0)));
+        g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), line));
+        for (let k = 1; k < 6; k++) {
+          const f = k / 6;
+          const m = new THREE.Mesh(flag, colors[k % 4]);
+          m.position.lerpVectors(a, c, f);
+          m.position.y -= Math.sin(f * Math.PI) * 0.18;
+          m.lookAt(m.position.x + (c.z - a.z), m.position.y, m.position.z - (c.x - a.x));
+          g.add(m);
+        }
+      });
+    }
+    this.scene.add(g);
+  }
+
   update(dt) {
     this.time += dt;
     timeUniform.value = this.time;
@@ -616,6 +652,16 @@ export class Renderer {
         if (s.carry) u.carry.material = M.mat(M.ITEM_COLORS[s.carry]);
       }
       M.animateSettler(o, s, this.time, dt);
+      // Fest: hüpfen und drehen
+      if (s.dancing) {
+        o.position.y += Math.abs(Math.sin(this.time * 7 + s.id)) * 0.12;
+        o.rotation.y = this.time * 3 + s.id;
+      }
+    }
+    if (this.bunting && !this.game.festActive) {
+      this.scene.remove(this.bunting);
+      this.bunting.traverse((m) => m.geometry?.dispose());
+      this.bunting = null;
     }
 
     for (const [f, o] of this.fieldObjs) o.userData.update(f);

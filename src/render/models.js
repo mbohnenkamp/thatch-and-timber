@@ -169,6 +169,7 @@ export function buildingModel(type, level = 1, upgrading = false) {
   if (type === 'well') return wellModel();
   if (type === 'townhall' && A.has('custom/townhall')) return townhallModel();
   if (type === 'monument') return monumentModel();
+  if (type === 'plaza') return plazaModel();
   const kit = A.has('town/wall') ? kitBuilding(type, level) : null;
   const g = kit || new THREE.Group();
   const lift = (level - 1) * 0.16;
@@ -540,6 +541,31 @@ function monumentModel() {
   for (const [x, z] of [[-0.42, -0.42], [0.42, -0.42], [-0.42, 0.42], [0.42, 0.42]]) {
     g.add(box(0.03, 0.55, 0.03, '#6e4423', x, 0.1, z));
     g.add(box(0.02, 0.12, 0.18, '#b3472f', x, 0.5, z + 0.09));
+  }
+  return g;
+}
+
+// Marktplatz: gepflasterte Fläche mit Brunnen in der Mitte, Bänke und Blumen
+function plazaModel() {
+  const g = new THREE.Group();
+  g.add(box(1.7, 0.04, 1.7, '#a29f96'));
+  for (let i = 0; i < 4; i++) g.add(box(0.8, 0.01, 0.8, i % 3 ? '#b8b4aa' : '#8f8a80', (i % 2 ? 0.42 : -0.42), 0.04, (i < 2 ? 0.42 : -0.42)));
+  const well = wellModel();
+  well.scale.setScalar(0.8);
+  well.position.y = 0.05;
+  g.add(well);
+  for (const [x, z, r] of [[-0.62, 0, Math.PI / 2], [0.62, 0, Math.PI / 2], [0, 0.62, 0]]) {
+    const bench = new THREE.Group();
+    bench.add(box(0.36, 0.04, 0.1, '#8a5a32', 0, 0.1, 0));
+    bench.add(box(0.04, 0.1, 0.08, '#6e4423', -0.14, 0, 0));
+    bench.add(box(0.04, 0.1, 0.08, '#6e4423', 0.14, 0, 0));
+    bench.position.set(x, 0.05, z);
+    bench.rotation.y = r;
+    g.add(bench);
+  }
+  for (const [x, z] of [[-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]]) {
+    g.add(box(0.16, 0.12, 0.16, '#8f8a80', x, 0.04, z));
+    g.add(box(0.12, 0.08, 0.12, '#d0607a', x, 0.16, z));
   }
   return g;
 }
