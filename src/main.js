@@ -14,7 +14,7 @@ import { renderPreview } from './render/preview.js';
 const SETTINGS_KEY = 'siedler-dorf-settings';
 function loadSettings() {
   // Handys bekommen ab Werk die einfache Grafik, die hohe sprengte auf Android den Grafikspeicher
-  const touch = matchMedia('(pointer: coarse)').matches;
+  const touch = navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches;
   const st = { graphics: touch ? 'low' : 'high', dayNight: true, seasons: true };
   try { Object.assign(st, JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}); } catch { /* Standard */ }
   return st;
