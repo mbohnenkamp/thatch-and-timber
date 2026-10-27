@@ -228,6 +228,9 @@ export class Hud {
     this.info = el.querySelector('#info');
     this.hint = el.querySelector('#hint');
     this.toasts = el.querySelector('#toasts');
+    // Fenster über der Bauleiste richten sich nach ihrer echten Höhe (sie wächst mit den Gruppen)
+    const bar = el.querySelector('#buildbar');
+    new ResizeObserver(() => document.documentElement.style.setProperty('--bar-h', `${bar.offsetHeight}px`)).observe(bar);
     this.buildButtons = [...el.querySelectorAll('.build')];
     this.speedButtons = [...el.querySelectorAll('.speed button')];
 

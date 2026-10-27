@@ -208,7 +208,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 #minimap canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; cursor: pointer; touch-action: none; }
 #info {
-  position: absolute; right: 12px; bottom: 110px; width: 280px;
+  position: absolute; right: 12px; bottom: calc(var(--bar-h, 100px) + 10px); width: 280px;
+  max-height: calc(100% - var(--bar-h, 100px) - 150px); overflow-y: auto;
   background: var(--panel); border: 2px solid var(--edge); border-radius: 12px;
   padding: 12px 14px;
 }
@@ -250,7 +251,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 #tip {
-  position: absolute; left: 12px; bottom: 110px; width: 320px; z-index: 6;
+  position: absolute; left: 12px; bottom: calc(var(--bar-h, 100px) + 10px); width: 320px; z-index: 6;
   background: var(--panel); border: 2px solid var(--accent); border-radius: 12px;
   padding: 10px 14px 12px;
 }
@@ -264,7 +265,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .tip-actions [data-t=ok] { background: var(--accent); color: #2e2116; border-color: var(--accent); }
 
 #intro {
-  position: absolute; left: 12px; bottom: 110px; width: 320px; max-width: calc(100% - 24px); z-index: 6;
+  position: absolute; left: 12px; bottom: calc(var(--bar-h, 100px) + 10px); width: 320px; max-width: calc(100% - 24px); z-index: 6;
   background: var(--panel); border: 2px solid var(--accent); border-radius: 12px;
   padding: 10px 14px 12px;
 }
@@ -276,7 +277,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @keyframes intro-pulse { 50% { outline-color: #fff3c4; box-shadow: 0 0 14px var(--accent); } }
 
 #hint {
-  position: absolute; left: 50%; bottom: 110px; transform: translateX(-50%);
+  position: absolute; left: 50%; bottom: calc(var(--bar-h, 100px) + 10px); transform: translateX(-50%);
   background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
   padding: 6px 12px; font-size: 14px; max-width: calc(100% - 32px); text-align: center;
   pointer-events: none;
@@ -303,8 +304,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .spacer { display: none; }
   .group button { min-width: 36px; padding: 4px 6px; font-size: 13px; }
   .build { width: 86px; }
-  #info { left: 16px; right: 16px; width: auto; bottom: 104px; }
-  #hint { bottom: 104px; }
+  #info { left: 16px; right: 16px; width: auto; bottom: calc(var(--bar-h, 96px) + 8px); }
+  #hint { bottom: calc(var(--bar-h, 96px) + 8px); }
   #intro .tip-text { font-size: 13px; }
   #toasts { top: 100px; }
 }
