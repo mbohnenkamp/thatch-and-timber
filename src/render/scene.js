@@ -140,6 +140,10 @@ export class Renderer {
     r.toneMapping = THREE.NeutralToneMapping;
     r.toneMappingExposure = 0.85;
     container.appendChild(r.domElement);
+    r.domElement.addEventListener('webglcontextlost', () => {
+      if (this.disposed) return;
+      window.dispatchEvent(new ErrorEvent('error', { message: 'Die Grafikkarte hat das 3D-Bild verworfen (zu wenig Speicher?). Stell in den Einstellungen die Grafik auf „einfach" und lade neu.' }));
+    });
 
     const map = MAPS[game.mapType];
     this.scene = new THREE.Scene();
@@ -562,6 +566,7 @@ export class Renderer {
 
   // Gibt Grafikspeicher frei (für Vorschaubilder im Menü)
   dispose() {
+    this.disposed = true;
     window.removeEventListener('resize', this.onResize);
     this.scene.traverse((o) => {
       if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();

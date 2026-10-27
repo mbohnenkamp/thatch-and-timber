@@ -67,6 +67,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: rgba(46, 33, 22, 0.85); border: 1px solid var(--edge); color: var(--text); font-size: 12px;
 }
 .reroll:hover { border-color: var(--accent); }
+#fatal {
+  position: fixed; left: 16px; right: 16px; top: 16px; z-index: 100; white-space: pre-wrap; user-select: text;
+  background: var(--panel); border: 1px solid #c8473a; border-radius: 8px; padding: 12px 16px; font-size: 14px;
+}
+
 #loading {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 11;
   background: var(--panel); border: 1px solid var(--edge); border-radius: 8px; padding: 8px 16px;

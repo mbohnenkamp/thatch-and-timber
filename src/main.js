@@ -20,7 +20,7 @@ function loadSettings() {
 function saveSettings(st) {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(st)); } catch { /* egal */ }
 }
-import { AUTOSAVE_INTERVAL, ITEMS, BUILDINGS, FEST_TIME } from './config.js';
+import { AUTOSAVE_INTERVAL, ITEMS, BUILDINGS, FEST_TIME, VERSION } from './config.js';
 
 const SEASON_TOAST = {
   spring: 'Frühling! Die Felder werden wieder bestellt, Beeren und Bäume wachsen nach.',
@@ -30,6 +30,23 @@ const SEASON_TOAST = {
 };
 
 const app = document.getElementById('app');
+
+// Statt schwarzem Bild eine Meldung, die man abschreiben kann (Handys ohne Konsole)
+function showFatal(text) {
+  let box = document.getElementById('fatal');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'fatal';
+    document.body.appendChild(box);
+  }
+  box.textContent = `${text}\n\nVersion ${VERSION} · ${navigator.userAgent}`;
+}
+window.addEventListener('error', (e) => showFatal(`Fehler: ${e.message}`));
+window.addEventListener('unhandledrejection', (e) => showFatal(`Fehler: ${e.reason?.message ?? e.reason}`));
+if (!document.createElement('canvas').getContext('webgl2')) {
+  showFatal('Dein Browser stellt kein WebGL 2 bereit, ohne das kann das Spiel keine 3D-Grafik zeichnen. '
+    + 'Hilft oft: Hardwarebeschleunigung einschalten, Chrome oder Firefox statt Chromium nehmen, Browser aktualisieren.');
+}
 
 // Modelle laden, während das Menü schon sichtbar ist
 const status = document.createElement('div');
