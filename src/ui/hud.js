@@ -1,4 +1,4 @@
-import { SEASON_LENGTH, BUILD_GROUPS, TRADE_VALUE, NO_TOOL_JOBS, MAP_SIZES, DEFAULT_MAP_SIZE, BUILDINGS, ITEMS, MAPS, RESOURCES, MAX_LEVEL, WORK_RADIUS, BREAD_FOOD, ROAD, CART } from '../config.js';
+import { SEASON_LENGTH, BUILD_GROUPS, TRADE_VALUE, NO_TOOL_JOBS, MAP_SIZES, DEFAULT_MAP_SIZE, BUILDINGS, ITEMS, MAPS, RESOURCES, MAX_LEVEL, WORK_RADIUS, BREAD_FOOD, ROAD, CART, VERSION, ISSUES_URL } from '../config.js';
 
 const ROAD_ICON = '<svg viewBox="0 0 32 32"><path d="M6 28L13 4h6l7 24z" fill="#9b9384"/><path d="M15.2 8h1.6l.4 4h-2.4zM14.6 16h2.8l.5 5h-3.8z" fill="#efe6d2"/></svg>';
 import { currentGoal, rankOf, isUnlocked, RANKS } from '../goals.js';
@@ -23,6 +23,18 @@ const houseIcon = (t) => t === 'well' ? WELL_ICON : t === 'monument' ? MONUMENT_
   `<svg viewBox="0 0 32 32"><rect x="7" y="15" width="18" height="12" fill="${WALL[t]}"/><path d="M4 16L16 6l12 10z" fill="${ROOF[t]}"/><rect x="14" y="20" width="4" height="7" fill="#5b3a1e"/></svg>`;
 
 const minutes = (sec) => { const m = Math.round(sec / 60); return `${m} Minute${m === 1 ? '' : 'n'}`; };
+// Neues GitHub-Issue mit vorausgefülltem Spielstand (ohne persönliche Daten); braucht ein GitHub-Konto
+export function feedbackUrl(game) {
+  const lines = ['**Was ist passiert, oder was ist deine Idee?**', '', '', '---'];
+  if (game) {
+    const size = Object.values(MAP_SIZES).find((m) => m.size === game.size)?.name || game.size;
+    lines.push(`Spielstand: ${MAPS[game.mapType].name}, ${size}, Karte ${game.seed}, ${rankOf(game)}, ${game.season.name} Jahr ${game.season.year}, ${game.settlers.length} Siedler, ${Math.round(game.time / 60)} min gespielt`);
+  }
+  lines.push(`Version ${VERSION} · Bildschirm ${innerWidth}×${innerHeight}${matchMedia('(pointer: coarse)').matches ? ' · Touch' : ''}`);
+  const q = new URLSearchParams({ title: game ? `Feedback aus ${game.townName}` : 'Feedback', body: lines.join('\n') });
+  return `${ISSUES_URL}?${q}`;
+}
+
 const costText = (cost) => Object.entries(cost).map(([k, v]) => `${v} ${ITEMS[k]}`).join(', ');
 
 export function showMenu(root, { saves, canCreate, onStart, onContinue, onDelete, preview }) {
@@ -55,7 +67,7 @@ export function showMenu(root, { saves, canCreate, onStart, onContinue, onDelete
             <span class="del-ask" hidden>Wirklich löschen? <button class="btn danger" data-a="del-yes">Ja</button><button class="btn secondary" data-a="del-no">Nein</button></span>
           </div>`).join('')}
       </div>
-      <p class="credits">3D-Modelle: Kenney.nl (CC0)</p>
+      <p class="credits">Version ${VERSION} · <a href="${feedbackUrl()}" target="_blank" rel="noopener">Feedback und Ideen</a> · 3D-Modelle: Kenney.nl (CC0)</p>
     </div>`;
   root.appendChild(el);
   // Jede Landschaft hat eine ausgewürfelte Karte; die Vorschau zeigt genau diese
@@ -178,6 +190,8 @@ export class Hud {
         <button data-set="graphics"></button>
         <button data-set="dayNight"></button>
         <button data-set="seasons"></button>
+        <a class="feedback" target="_blank" rel="noopener">Feedback geben</a>
+        <small class="feedback-note">Öffnet GitHub (Konto nötig). Spielstand wird mitgeschickt.</small>
       </div>
       <div id="goal"><b></b><span></span><small></small><i><u></u></i></div>
       <div id="info" hidden></div>
@@ -232,7 +246,10 @@ export class Hud {
         const a = b.dataset.a;
         if (a === 'save') handlers.onSave();
         else if (a === 'menu') handlers.onMenu();
-        else if (a === 'settings') this.settings.hidden = !this.settings.hidden;
+        else if (a === 'settings') {
+          this.settings.hidden = !this.settings.hidden;
+          if (!this.settings.hidden) this.settings.querySelector('.feedback').href = feedbackUrl(handlers.game());
+        }
       };
     });
     this.settings = el.querySelector('#settings');

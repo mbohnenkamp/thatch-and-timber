@@ -95,6 +95,7 @@ function start(game, isNew = false) {
   };
 
   const hud = new Hud(app, {
+    game: () => game,
     onBuild: (t) => { audio.play('click'); setBuild(buildType === t ? null : t); },
     onSpeed: (s) => { audio.play('click'); setSpeed(s); },
     onSave: () => hud.toast(saveGame(game) ? 'Spiel gespeichert' : 'Speichern fehlgeschlagen'),

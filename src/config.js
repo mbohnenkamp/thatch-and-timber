@@ -1,3 +1,6 @@
+export const VERSION = '5.5';
+export const ISSUES_URL = 'https://github.com/mbohnenkamp/thatch-and-timber/issues/new';
+
 // Kartengrößen in Feldern; alte Spielstände ohne Angabe sind 64
 export const MAP_SIZES = { small: { name: 'Klein', size: 64 }, medium: { name: 'Mittel', size: 96 }, large: { name: 'Groß', size: 128 } };
 export const DEFAULT_MAP_SIZE = 'large';
