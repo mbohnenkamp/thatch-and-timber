@@ -256,6 +256,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .tip-actions [data-t=ok] { background: var(--accent); color: #2e2116; border-color: var(--accent); }
 
+#intro {
+  position: absolute; left: 12px; bottom: 110px; width: 320px; max-width: calc(100% - 24px); z-index: 6;
+  background: var(--panel); border: 2px solid var(--accent); border-radius: 12px;
+  padding: 10px 14px 12px;
+}
+#intro small { color: #c9b89a; font-family: system-ui, sans-serif; font-weight: 400; margin-left: 6px; }
+#intro.low { bottom: 8px; z-index: 8; }
+#intro .primary { background: var(--accent); color: #2e2116; border-color: var(--accent); }
+#intro [hidden] { display: none; }
+.intro-glow { outline: 3px solid var(--accent); outline-offset: 2px; animation: intro-pulse 1.2s ease-in-out infinite; }
+@keyframes intro-pulse { 50% { outline-color: #fff3c4; box-shadow: 0 0 14px var(--accent); } }
+
 #hint {
   position: absolute; left: 50%; bottom: 110px; transform: translateX(-50%);
   background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
@@ -285,33 +297,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .group button { min-width: 36px; padding: 4px 6px; font-size: 13px; }
   .build { width: 86px; }
   #info { left: 16px; right: 16px; width: auto; bottom: 104px; }
-  #settings {
-  position: absolute; top: 96px; right: 12px; width: 230px; z-index: 7;
-  background: var(--panel); border: 2px solid var(--edge); border-radius: 12px;
-  padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px;
-}
-#settings[hidden] { display: none; }
-#settings h3 { margin: 0 0 4px; font-family: Georgia, serif; color: var(--accent); }
-#settings button {
-  text-align: left; padding: 8px 10px; border-radius: 8px; font-size: 14px;
-  background: #4a3626; border: 1px solid var(--edge);
-}
-
-#tip {
-  position: absolute; left: 12px; bottom: 110px; width: 320px; z-index: 6;
-  background: var(--panel); border: 2px solid var(--accent); border-radius: 12px;
-  padding: 10px 14px 12px;
-}
-.tip-head { font-family: Georgia, serif; color: var(--accent); font-weight: 700; }
-.tip-text { margin: 6px 0 10px; font-size: 14px; line-height: 1.4; }
-.tip-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-.tip-actions button {
-  padding: 6px 10px; border-radius: 6px; font-size: 13px;
-  background: #4a3626; border: 1px solid var(--edge);
-}
-.tip-actions [data-t=ok] { background: var(--accent); color: #2e2116; border-color: var(--accent); }
-
-#hint { bottom: 104px; }
+  #hint { bottom: 104px; }
+  #intro .tip-text { font-size: 13px; }
   #toasts { top: 100px; }
 }
 

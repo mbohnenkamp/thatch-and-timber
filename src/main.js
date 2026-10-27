@@ -6,6 +6,7 @@ import { setupInput } from './input.js';
 import { saveGame, loadGame, listSaves, describeSave, deleteSave, canCreate, newSaveId, MAX_SAVES } from './save.js';
 import { audio } from './audio.js';
 import { Advisor } from './ui/tips.js';
+import { Intro, introDone } from './ui/intro.js';
 import { Minimap } from './ui/minimap.js';
 import { loadAssets } from './render/assets.js';
 import { renderPreview } from './render/preview.js';
@@ -54,7 +55,7 @@ showMenu(app, {
     const game = Game.create(mapType, seed, size);
     game.saveId = newSaveId();
     saveGame(game);
-    start(game);
+    start(game, true);
   }),
   onContinue: whenReady((id) => start(loadGame(id))),
   onDelete: deleteSave,
@@ -62,7 +63,7 @@ showMenu(app, {
 });
 app.appendChild(status);
 
-function start(game) {
+function start(game, isNew = false) {
   audio.init();
   const view = document.createElement('div');
   view.id = 'view';
@@ -139,7 +140,13 @@ function start(game) {
       renderer.rig.target.z = b.z + 0.5;
       select({ kind: 'building', ref: b });
     },
-  });
+  });  // Einführung nur beim allerersten neuen Spiel; der Willkommens-Tipp steckt schon darin
+  const intro = isNew && !introDone() ? new Intro(app, hud) : null;
+  if (intro) {
+    advisor.prefs.seen.controls = true;
+    advisor.save();
+  }
+
   hud.showSettings(settingsState());
   const minimap = new Minimap(app, game, renderer.rig);
   renderer.flocks.onSound = (x, z) => audio.play('baa', x, z);
@@ -276,7 +283,8 @@ function start(game) {
     audio.setListener(t.x, t.z, renderer.rig.az, renderer.rig.dist);
     audio.setAmbience(game.season.snow, 1 - renderer.dayNight.daylight);
     hud.update(game, buildType, selection, speed);
-    advisor.update(game);
+    if (intro?.active) intro.update(game);
+    else advisor.update(game);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
