@@ -158,6 +158,10 @@ export const BUILDINGS = {
   townhall: {
     name: 'Rathaus', group: 'base', unlock: 4, cost: { planks: 10, stone: 16, iron: 4 }, buildTime: 30, unique: true, speedBonus: 0.15,
   },
+  // Krönung der Stadt: kein Arbeiter, nur einmal; fertig gebaut wird die Stadt zur Großstadt
+  monument: {
+    name: 'Denkmal', group: 'base', unlock: 4, cost: { stone: 30, planks: 20, iron: 8 }, buildTime: 60, unique: true,
+  },
   // Vom Ufer geradeaus übers Wasser (höchstens span Felder); am anderen Ufer ein kleines Gebiet als Brückenkopf
   bridge: {
     name: 'Brücke', group: 'base', unlock: 0, cost: { wood: 8, stone: 4 }, buildTime: 16, span: 8, territory: [5],

@@ -14,13 +14,15 @@ const ICONS = {
   people: '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.5" fill="#f0c39b"/><path d="M6 21c0-5 3-8 6-8s6 3 6 8z" fill="#7a6a55"/></svg>',
 };
 
-const ROOF = { townhall: '#b3472f', oremine: '#6d6a64', coalmine: '#3b3735', smelter: '#b3472f', market: '#c6283c', sawmill: '#7a5230', toolmaker: '#b3472f', tower: '#b3472f', sheepfarm: '#c9a24a', well: '#a2612f', warehouse: '#b3472f', builderhut: '#7a5230', farm: '#c9a24a', mill: '#8a5a32', bakery: '#b3472f', woodcutter: '#c9a24a', quarry: '#6d6a64', gatherer: '#c9a24a', fisher: '#5d7d95', house: '#b3472f' };
-const WALL = { townhall: '#ece0c4', oremine: '#c0714a', coalmine: '#a29f96', smelter: '#a29f96', market: '#e8c440', sawmill: '#c9a77a', toolmaker: '#a29f96', tower: '#c9c9c6', sheepfarm: '#c9a77a', well: '#c9c9c6', warehouse: '#ece0c4', builderhut: '#c9a77a', farm: '#e2d2a8', mill: '#ece0c4', bakery: '#ece0c4', woodcutter: '#c9a77a', quarry: '#a29f96', gatherer: '#d8c49a', fisher: '#b9a27e', house: '#ece0c4' };
+const ROOF = { monument: '#c9a227', townhall: '#b3472f', oremine: '#6d6a64', coalmine: '#3b3735', smelter: '#b3472f', market: '#c6283c', sawmill: '#7a5230', toolmaker: '#b3472f', tower: '#b3472f', sheepfarm: '#c9a24a', well: '#a2612f', warehouse: '#b3472f', builderhut: '#7a5230', farm: '#c9a24a', mill: '#8a5a32', bakery: '#b3472f', woodcutter: '#c9a24a', quarry: '#6d6a64', gatherer: '#c9a24a', fisher: '#5d7d95', house: '#b3472f' };
+const WALL = { monument: '#c9c9c6', townhall: '#ece0c4', oremine: '#c0714a', coalmine: '#a29f96', smelter: '#a29f96', market: '#e8c440', sawmill: '#c9a77a', toolmaker: '#a29f96', tower: '#c9c9c6', sheepfarm: '#c9a77a', well: '#c9c9c6', warehouse: '#ece0c4', builderhut: '#c9a77a', farm: '#e2d2a8', mill: '#ece0c4', bakery: '#ece0c4', woodcutter: '#c9a77a', quarry: '#a29f96', gatherer: '#d8c49a', fisher: '#b9a27e', house: '#ece0c4' };
 const WELL_ICON = '<svg viewBox="0 0 32 32"><rect x="8" y="10" width="2.5" height="12" fill="#9a5a30"/><rect x="21.5" y="10" width="2.5" height="12" fill="#9a5a30"/><path d="M5 12L16 5l11 7z" fill="#a2612f"/><rect x="7" y="19" width="18" height="9" rx="1.5" fill="#c9c9c6"/><path d="M7 23h18M12 19v4M20 19v4M16 23v5" stroke="#97979a" stroke-width="1"/><rect x="14.5" y="13" width="3" height="3.5" fill="#7a4a28"/></svg>';
 const BRIDGE_ICON = '<svg viewBox="0 0 32 32"><rect x="2" y="22" width="28" height="6" fill="#5d9bd0"/><path d="M3 18q13-8 26 0v3q-13-7-26 0z" fill="#a0703f"/><path d="M3 13q13-8 26 0" stroke="#8a5a32" stroke-width="1.5" fill="none"/><path d="M9 11v7M16 8.5v6M23 11v7" stroke="#8a5a32" stroke-width="1.5"/></svg>';
-const houseIcon = (t) => t === 'well' ? WELL_ICON : t === 'bridge' ? BRIDGE_ICON :
+const MONUMENT_ICON = '<svg viewBox="0 0 32 32"><rect x="6" y="25" width="20" height="3" fill="#a29f96"/><rect x="9" y="21" width="14" height="4" fill="#c9c9c6"/><path d="M13 21l1.5-15h3L19 21z" fill="#ddd8cc"/><path d="M14.5 6L16 3l1.5 3z" fill="#c9a227"/></svg>';
+const houseIcon = (t) => t === 'well' ? WELL_ICON : t === 'monument' ? MONUMENT_ICON : t === 'bridge' ? BRIDGE_ICON :
   `<svg viewBox="0 0 32 32"><rect x="7" y="15" width="18" height="12" fill="${WALL[t]}"/><path d="M4 16L16 6l12 10z" fill="${ROOF[t]}"/><rect x="14" y="20" width="4" height="7" fill="#5b3a1e"/></svg>`;
 
+const minutes = (sec) => { const m = Math.round(sec / 60); return `${m} Minute${m === 1 ? '' : 'n'}`; };
 const costText = (cost) => Object.entries(cost).map(([k, v]) => `${v} ${ITEMS[k]}`).join(', ');
 
 export function showMenu(root, { saves, canCreate, onStart, onContinue, onDelete, preview }) {
@@ -254,27 +256,28 @@ export class Hud {
     else if (buildType) this.hint.textContent = `${BUILDINGS[buildType].name} platzieren: auf einen freien Platz tippen. Rechtsklick oder Esc bricht ab.`;
   }
 
-  // Ehrentafel beim Erreichen der Stadt (und später über das Rathaus)
-  showHonor(game) {
+  // Ehrentafel beim Erreichen der Stadt und der Großstadt (später über Rathaus und Denkmal)
+  showHonor(game, kind = 'city') {
     this.el.querySelector('#honor')?.remove();
-    const t = game.cityAt ?? game.time;
+    const metro = kind === 'metro';
+    const t = (metro ? game.metroAt : game.cityAt) ?? game.time;
     const days = Math.max(1, Math.round(t / (SEASON_LENGTH / 2)));
     const size = Object.values(MAP_SIZES).find((m) => m.size === game.size)?.name || '';
     const rows = [
       ['Karte', `${MAPS[game.mapType].name}${size ? `, ${size}` : ''}`],
-      ['Stadt nach', `${days} Spieltag${days === 1 ? '' : 'en'} (Jahr ${Math.floor(t / SEASON_LENGTH / 4) + 1})`],
-      ['Spielzeit bei 1×', `${Math.round(t / 60)} Minuten`],
+      [metro ? 'Großstadt nach' : 'Stadt nach', `${days} Spieltag${days === 1 ? '' : 'en'} (Jahr ${Math.floor(t / SEASON_LENGTH / 4) + 1})`],
+      ['Spielzeit bei 1×', minutes(t)],
       ['Siedler', game.settlers.length],
       ['Gebäude', game.buildings.filter((b) => b.done && !b.removed).length],
-      ['Hunger insgesamt', `${Math.round(game.hungerTime / 60)} Minuten`],
+      ['Hunger insgesamt', minutes(game.hungerTime)],
     ];
     const el = document.createElement('div');
     el.id = 'honor';
     el.innerHTML = `<div class="card">
       <h2>Ehrentafel</h2>
-      <p class="town">${game.townName} ist eine Stadt!</p>
+      <p class="town">${game.townName} ist eine ${metro ? 'Großstadt' : 'Stadt'}!</p>
       <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
-      <p>Du kannst weiterspielen. Neu freigeschaltet: das Rathaus.</p>
+      <p>${metro ? 'Alle Aufgaben sind erfüllt. Du kannst weiterspielen und deine Stadt ausbauen.' : 'Du kannst weiterspielen. Neu freigeschaltet: Rathaus und Denkmal. Das Denkmal macht die Stadt zur Großstadt.'}</p>
       <button class="btn">Weiterspielen</button>
     </div>`;
     el.querySelector('button').onclick = () => el.remove();
@@ -509,6 +512,10 @@ export class Hud {
     if (ref.type === 'townhall') {
       p.push(`<p>Alle Arbeiter in ${game.townName} arbeiten ${Math.round(def.speedBonus * 100)} % schneller.</p>`);
       if (game.cityAt != null) p.push('<button class="secondary" data-act="honor">Ehrentafel ansehen</button>');
+    }
+    if (ref.type === 'monument' && ref.done) {
+      p.push(`<p>Das Denkmal erinnert an die Gründung von ${game.townName}.</p>`);
+      if (game.metroAt != null) p.push('<button class="secondary" data-act="honor-metro">Ehrentafel ansehen</button>');
     }
     if (def.territory) p.push(`<p><em>Gebiet:</em> Radius ${def.territory[ref.level - 1]} Felder</p>`);
     if (ref.type === 'well') {

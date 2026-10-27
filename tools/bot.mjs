@@ -74,7 +74,14 @@ export function makeBot(g) {
 
   function think() {
     // Markt auf Holz -> Eisen stellen, sobald er steht
-    for (const m of of('market')) if (m.done && !m.trade) { g.setTrade(m, 'wood', 'iron'); note('Markt tauscht Holz gegen Eisen'); }
+    // Wie ein Spieler: Markt auf Holz -> Eisen, bei Steinmangel und genug Eisen auf Holz -> Stein
+    // Mit zwei Märkten: einer für Eisen, einer für Stein
+    const markets = of('market');
+    markets.forEach((m, i) => {
+      if (!m.done) return;
+      const want = markets.length > 1 ? (i ? 'stone' : 'iron') : g.total('stone') < 50 && g.total('iron') >= 8 ? 'stone' : 'iron';
+      if (m.trade?.get !== want) { g.setTrade(m, 'wood', want); note(`Markt tauscht Holz gegen ${want === 'stone' ? 'Stein' : 'Eisen'}`); }
+    });
     if (openSites() >= 2) return;
     // Werkzeug wird knapp und keine Schmelze läuft: Markt bauen
     if (g.total('tools') <= 3 && isUnlocked(g, 'market') && !of('market').length && !of('smelter').some((b) => b.done && b.workers.length) && g.canAfford(BUILDINGS.market.cost)) {
@@ -91,7 +98,7 @@ export function makeBot(g) {
       }
     }
     const quarries = of('quarry').filter((b) => b.done);
-    if (quarries.length && quarries.every((b) => b.workers[0]?.status === 'Findet nichts in der Nähe') && g.canAfford(BUILDINGS.tower.cost) && !of('tower').some(isSite)) {
+    if (markets.length < 2 && quarries.length && quarries.every((b) => b.workers[0]?.status === 'Findet nichts in der Nähe') && g.canAfford(BUILDINGS.tower.cost) && !of('tower').some(isSite)) {
       const t = rockTowerSpot();
       if (t) {
         g.place('tower', t.x, t.z);
@@ -100,6 +107,31 @@ export function makeBot(g) {
         if (q && g.canAfford(BUILDINGS.quarry.cost)) { g.place('quarry', q.x, q.z); note('baut Steinbruch (neue Felsen)'); }
         return;
       }
+    }
+    // Erz und Kohle liegen herum, aber keine Schmelze; Holz wird knapp: mehr Holzfäller
+    const extra = [];
+    if (isUnlocked(g, 'smelter') && !of('smelter').length && g.total('ore') >= 4 && g.total('coal') >= 4) extra.push('smelter');
+    if (g.total('wood') < 100 && of('woodcutter').length < 6 && g.settlers.length > 60) extra.push('woodcutter');
+    for (const t of extra) {
+      if (!g.canAfford(BUILDINGS[t].cost)) continue;
+      const s = spot(t);
+      if (s) { g.place(t, s.x, s.z); note(`baut ${BUILDINGS[t].name} (Nachschub)`); return; }
+    }
+    // Großes Dorf: zweites Lagerhaus (mehr Träger) und zweite Bauhütte
+    for (const t of ['warehouse', 'builderhut']) {
+      if (!isUnlocked(g, 'warehouse') || of(t).length >= 2 || !g.canAfford(BUILDINGS[t].cost)) continue;
+      const s = spot(t);
+      if (s) { g.place(t, s.x, s.z); note(`baut zweite${t === 'warehouse' ? 's Lagerhaus' : ' Bauhütte'}`); return; }
+    }
+    // Als Stadt: Rathaus, dann (ab 100 Siedlern) das Denkmal
+    if (isUnlocked(g, 'townhall') && markets.length === 1 && g.canAfford(BUILDINGS.market.cost)) {
+      const s = spot('market');
+      if (s) { g.place('market', s.x, s.z); note('baut zweiten Markt'); return; }
+    }
+    for (const t of ['townhall', 'monument']) {
+      if (!isUnlocked(g, t) || of(t).length || (t === 'monument' && g.settlers.length < 100) || !g.canAfford(BUILDINGS[t].cost)) continue;
+      const s = spot(t);
+      if (s) { g.place(t, s.x, s.z); note(`baut ${BUILDINGS[t].name}`); return; }
     }
     // Wohnraum geht vor, wenn es eng wird
     const crowded = g.settlers.length >= g.housing - 1 && !of('house').some(isSite);

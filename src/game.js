@@ -37,6 +37,7 @@ export class Game {
     this.hungry = false;
     this.hungerTime = 0;
     this.cityAt = null;
+    this.metroAt = null;
     this.growthTimer = 0;
     this.checkTimer = 0;
     this.handlers = {};
@@ -244,9 +245,14 @@ export class Game {
     return set;
   }
 
-  // Ein wartender Karren im selben Straßennetz übernimmt den Auftrag
+  // Ein wartender Karren im selben Straßennetz übernimmt den Auftrag, aber nur wenn dieses Netz auch an ein Lager reicht
   cartWillServe(b) {
-    return this.carts.some((c) => c.waiting && this.accessComps(b).has(this.compAt(c.x, c.z)));
+    const comps = this.accessComps(b);
+    return this.carts.some((c) => {
+      if (!c.waiting) return false;
+      const comp = this.compAt(c.x, c.z);
+      return comps.has(comp) && this.warehouses.some((w) => this.accessComps(w).has(comp));
+    });
   }
 
   // --- Selbst gebaute Straßen ---
@@ -652,6 +658,7 @@ export class Game {
       goal: this.goal,
       hungerTime: Math.round(this.hungerTime),
       cityAt: this.cityAt,
+      metroAt: this.metroAt,
       nextId: this.nextId,
       resources: this.resources.map((n) => [n.amount, Math.round(n.timer * 10) / 10, n.gone ? 1 : 0]),
       buildings: this.buildings.map((b) => ({
@@ -679,6 +686,7 @@ export class Game {
     g.goal = d.goal || 0;
     g.hungerTime = d.hungerTime || 0;
     g.cityAt = d.cityAt ?? null;
+    g.metroAt = d.metroAt ?? null;
     g.nextId = d.nextId;
 
     d.resources.forEach(([amount, timer, gone], i) => {

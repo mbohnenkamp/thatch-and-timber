@@ -4,6 +4,7 @@ import { Game } from '../src/game.js';
 import { SEASON_LENGTH } from '../src/config.js';
 import { GOALS, rankOf } from '../src/goals.js';
 import { makeBot } from './bot.mjs';
+import { isSite } from '../src/entities/buildings.js';
 
 const map = process.argv[2] || 'forest';
 const years = Number(process.argv[3] || 3);
@@ -39,6 +40,8 @@ const open = GOALS.slice(goalAt.length).map((x) => x.text);
 if (open.length) console.log(`  offen: ${open.join(' | ')}`);
 console.log(`\nHunger gesamt ${(hungry / 60).toFixed(1)} min, davon im Winter ${(hungryWinter / 60).toFixed(1)} min; kleinster Nahrungsvorrat nach 10 min: ${minFood}`);
 console.log(`Ende: ${g.settlers.length} Siedler, Wohnraum ${g.housing}, Gebäude ${g.buildings.length}, Stufe ${rankOf(g)}`);
+const sites = g.buildings.filter((b) => isSite(b));
+if (sites.length) console.log('Offene Baustellen:', sites.map((b) => `${b.type}@${b.x},${b.z} geliefert ${JSON.stringify(b.delivered)} unterwegs ${JSON.stringify(b.incoming)} Bauer ${b.builders.length} Fortschritt ${Math.round((b.progress || 0) * 100) / 100}`).join(' | '));
 const jobs = {};
 for (const s of g.settlers) jobs[s.job || 'frei'] = (jobs[s.job || 'frei'] || 0) + 1;
 const kinds = {}; for (const b of g.buildings) kinds[b.type] = (kinds[b.type] || 0) + 1; console.log('Gebäude:', JSON.stringify(kinds));

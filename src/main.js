@@ -105,7 +105,7 @@ function start(game) {
         select(null);
       } else if (act === 'upgrade') game.startUpgrade(b);
       else if (act === 'cancel-upgrade') game.cancelUpgrade(b);
-      else if (act === 'honor') hud.showHonor(game);
+      else if (act === 'honor' || act === 'honor-metro') hud.showHonor(game, act === 'honor' ? 'city' : 'metro');
       else if (act.startsWith('give:') || act.startsWith('get:')) {
         const [side, item] = act.split(':');
         const next = { ...(b.trade || b.pending), [side]: item };
@@ -145,15 +145,15 @@ function start(game) {
   renderer.flocks.onSound = (x, z) => audio.play('baa', x, z);
   renderer.flocks.listener = renderer.rig.target;
   game.on('toast', (m) => hud.toast(m));
-  game.on('goal', ({ reward, rank, rankUp, unlocked, last }) => {
+  game.on('goal', ({ reward, rank, rankUp, unlocked, honor }) => {
     const gift = Object.entries(reward).map(([k, v]) => `${v} ${ITEMS[k]}`).join(' und ');
-    hud.toast(rankUp ? `Aufgabe erfüllt! ${game.townName} ist jetzt ein${rank === 'Stadt' || rank === 'Kleinstadt' ? 'e' : ''} ${rank}. Belohnung: ${gift}` : `Aufgabe erfüllt! Belohnung: ${gift}`);
+    hud.toast(rankUp ? `Aufgabe erfüllt! ${game.townName} ist jetzt ein${rank.endsWith('stadt') || rank === 'Stadt' ? 'e' : ''} ${rank}. Belohnung: ${gift}` : `Aufgabe erfüllt! Belohnung: ${gift}`);
     if (unlocked.length) {
       unlocked.forEach((t) => hud.fresh.add(t));
       hud.toast(`Neu in der Bauleiste: ${unlocked.map((t) => BUILDINGS[t].name).join(', ')}`);
     }
     audio.play(rankUp ? 'complete' : 'arrive');
-    if (last) hud.showHonor(game);
+    if (honor) hud.showHonor(game, honor);
   });
   game.on('season', (se) => { if (game.seasonsOn) hud.toast(SEASON_TOAST[se.key]); });
   game.on('sfx', (e) => audio.play(e.name, e.x, e.z));

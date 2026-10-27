@@ -168,6 +168,7 @@ const CRATE_POS = Array.from({ length: 8 }, (_, i) => [-0.2 + (i % 4) * 0.14, Ma
 export function buildingModel(type, level = 1, upgrading = false) {
   if (type === 'well') return wellModel();
   if (type === 'townhall' && A.has('custom/townhall')) return townhallModel();
+  if (type === 'monument') return monumentModel();
   const kit = A.has('town/wall') ? kitBuilding(type, level) : null;
   const g = kit || new THREE.Group();
   const lift = (level - 1) * 0.16;
@@ -525,6 +526,21 @@ function townhallModel() {
   const m = A.model('custom/townhall');
   m.scale.setScalar(0.38);
   g.add(m);
+  return g;
+}
+
+// Denkmal: Stufensockel, Obelisk mit goldener Spitze, Fahnen an den Ecken
+function monumentModel() {
+  const g = new THREE.Group();
+  g.add(box(1.0, 0.1, 1.0, '#8f8a80'));
+  g.add(box(0.78, 0.12, 0.78, '#a29f96', 0, 0.1, 0));
+  g.add(box(0.52, 0.22, 0.52, C.stone, 0, 0.22, 0));
+  g.add(cyl(0.09, 0.15, 1.1, 4, '#ddd8cc', 0, 0.44, 0));
+  g.add(cyl(0, 0.09, 0.16, 4, '#c9a227', 0, 1.54, 0));
+  for (const [x, z] of [[-0.42, -0.42], [0.42, -0.42], [-0.42, 0.42], [0.42, 0.42]]) {
+    g.add(box(0.03, 0.55, 0.03, '#6e4423', x, 0.1, z));
+    g.add(box(0.02, 0.12, 0.18, '#b3472f', x, 0.5, z + 0.09));
+  }
   return g;
 }
 
