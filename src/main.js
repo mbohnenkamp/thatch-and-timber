@@ -35,13 +35,13 @@ const app = document.getElementById('app');
 
 // Statt schwarzem Bild eine Meldung, die man abschreiben kann (Handys ohne Konsole)
 function showFatal(text) {
-  let box = document.getElementById('fatal');
-  if (!box) {
-    box = document.createElement('div');
-    box.id = 'fatal';
-    document.body.appendChild(box);
-  }
-  box.textContent = `${text}\n\nVersion ${VERSION} · ${navigator.userAgent}`;
+  document.getElementById('fatal')?.remove();
+  const box = document.createElement('div');
+  box.id = 'fatal';
+  box.innerHTML = '<p></p><button class="btn">Schließen</button>';
+  box.querySelector('p').textContent = `${text}\n\nVersion ${VERSION} · ${navigator.userAgent}`;
+  box.querySelector('button').onclick = () => box.remove();
+  document.body.appendChild(box);
 }
 window.addEventListener('error', (e) => showFatal(`Fehler: ${e.message}`));
 window.addEventListener('graphics-lost', () => {
