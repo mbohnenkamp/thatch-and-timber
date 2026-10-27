@@ -13,7 +13,9 @@ import { renderPreview } from './render/preview.js';
 
 const SETTINGS_KEY = 'siedler-dorf-settings';
 function loadSettings() {
-  const st = { graphics: 'high', dayNight: true, seasons: true };
+  // Handys bekommen ab Werk die einfache Grafik, die hohe sprengte auf Android den Grafikspeicher
+  const touch = matchMedia('(pointer: coarse)').matches;
+  const st = { graphics: touch ? 'low' : 'high', dayNight: true, seasons: true };
   try { Object.assign(st, JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}); } catch { /* Standard */ }
   return st;
 }
@@ -42,6 +44,11 @@ function showFatal(text) {
   box.textContent = `${text}\n\nVersion ${VERSION} · ${navigator.userAgent}`;
 }
 window.addEventListener('error', (e) => showFatal(`Fehler: ${e.message}`));
+window.addEventListener('graphics-lost', () => {
+  saveSettings({ ...loadSettings(), graphics: 'low' });
+  showFatal('Das Handy hat das 3D-Bild verworfen, vermutlich war der Grafikspeicher voll. '
+    + 'Die Grafik steht jetzt auf „einfach“. Bitte die Seite neu laden, dein Spielstand bleibt erhalten.');
+});
 window.addEventListener('unhandledrejection', (e) => showFatal(`Fehler: ${e.reason?.message ?? e.reason}`));
 if (!document.createElement('canvas').getContext('webgl2')) {
   showFatal('Dein Browser stellt kein WebGL 2 bereit, ohne das kann das Spiel keine 3D-Grafik zeichnen. '

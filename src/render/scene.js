@@ -142,7 +142,7 @@ export class Renderer {
     container.appendChild(r.domElement);
     r.domElement.addEventListener('webglcontextlost', () => {
       if (this.disposed) return;
-      window.dispatchEvent(new ErrorEvent('error', { message: 'Die Grafikkarte hat das 3D-Bild verworfen (zu wenig Speicher?). Stell in den Einstellungen die Grafik auf „einfach" und lade neu.' }));
+      window.dispatchEvent(new Event('graphics-lost'));
     });
 
     const map = MAPS[game.mapType];
