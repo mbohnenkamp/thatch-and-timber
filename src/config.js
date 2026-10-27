@@ -101,9 +101,10 @@ export const BUILDINGS = {
     name: 'Fischerhütte', group: 'food', unlock: 0, cost: { wood: 5 }, buildTime: 8, job: 'Fischer', resource: 'fish', produces: 'food', needsWater: true,
     upgrades: [{ planks: 3, stone: 3 }, { planks: 6, stone: 6 }],
   },
+  // Lässt immer keep Holz im Lager, damit noch gebaut werden kann (Marcos Test 27.10.2026)
   sawmill: {
     name: 'Sägewerk', group: 'craft', unlock: 0, cost: { wood: 6, stone: 3 }, buildTime: 14, job: 'Säger',
-    consumes: { wood: 1 }, produces: 'planks', workTime: 4, stockLimit: 30,
+    consumes: { wood: 1 }, produces: 'planks', workTime: 4, stockLimit: 30, keep: 20,
     upgrades: [{ wood: 6, stone: 4 }, { planks: 6, stone: 6 }],
   },
   toolmaker: {

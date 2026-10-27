@@ -531,6 +531,9 @@ export class Hud {
         p.push(`<p>Der Händler lässt immer ${def.keep} ${ITEMS[t.give]} im Lager und pausiert ab ${def.stockLimit} ${ITEMS[t.get]}.</p>`);
       } else p.push('<p>Wähle, was abgegeben wird und was du dafür bekommst.</p>');
     }
+    if (def.keep && !def.trade && ref.done) {
+      p.push(`<p>Lässt immer ${def.keep} ${ITEMS[Object.keys(def.consumes)[0]]} im Lager für Baustellen und pausiert ab ${def.stockLimit} ${ITEMS[def.produces]}.</p>`);
+    }
     if (ref.type === 'tavern' && ref.done) {
       const open = ref.servedUntil > game.time;
       p.push(`<p><em>Ausschank:</em> ${open ? `offen, noch ${Math.ceil(ref.servedUntil - game.time)} s` : 'geschlossen'} · <em>Brot:</em> ${ref.inputs.bread || 0}</p>`);
