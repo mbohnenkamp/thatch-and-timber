@@ -7,6 +7,8 @@ import { isSite, upgradeCost } from '../src/entities/buildings.js';
 export function makeBot(g) {
   const of = (t) => g.buildings.filter((b) => b.type === t && !b.removed);
   const openSites = () => g.buildings.filter((b) => isSite(b)).length;
+  // Ein Mensch baut nicht beliebig viele Türme
+  const towerOk = () => of('tower').length < 25 && !of('tower').some(isSite);
 
   // Platz suchen: im Gebiet, bewertet nach Nähe zum Lager und zu passenden Ressourcen
   function spot(type) {
@@ -98,7 +100,7 @@ export function makeBot(g) {
       }
     }
     const quarries = of('quarry').filter((b) => b.done);
-    if (markets.length < 2 && quarries.length && quarries.every((b) => b.workers[0]?.status === 'Findet nichts in der Nähe') && g.canAfford(BUILDINGS.tower.cost) && !of('tower').some(isSite)) {
+    if (markets.length < 2 && quarries.length && quarries.every((b) => b.workers[0]?.status === 'Findet nichts in der Nähe') && g.canAfford(BUILDINGS.tower.cost) && towerOk()) {
       const t = rockTowerSpot();
       if (t) {
         g.place('tower', t.x, t.z);
@@ -157,12 +159,12 @@ export function makeBot(g) {
         // Kein Erz/keine Kohle im Gebiet: Wachturm dorthin, sonst auslassen (der Markt liefert Eisen)
         const dep = BUILDINGS[type].resource;
         if (dep === 'ore' || dep === 'coal') {
-          const t = !of('market').length && g.canAfford(BUILDINGS.tower.cost) && !of('tower').some(isSite) && rockTowerSpot(dep);
+          const t = !of('market').length && g.canAfford(BUILDINGS.tower.cost) && towerOk() && rockTowerSpot(dep);
           if (t) { g.place('tower', t.x, t.z); note(`baut Wachturm Richtung ${dep === 'ore' ? 'Erz' : 'Kohle'}`); return; }
           next++;
           return;
         }
-        if (g.canAfford(BUILDINGS.tower.cost) && !of('tower').some(isSite)) {
+        if (g.canAfford(BUILDINGS.tower.cost) && towerOk()) {
           const t = towerSpot();
           if (t) { g.place('tower', t.x, t.z); note('baut Wachturm (kein Platz mehr)'); return; }
         }

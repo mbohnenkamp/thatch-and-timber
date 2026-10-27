@@ -148,9 +148,9 @@ export const BUILDINGS = {
     name: 'Wohnhaus', group: 'base', unlock: 0, cost: { wood: 6, stone: 4 }, buildTime: 14, housing: [4, 7, 10],
     upgrades: [{ planks: 3, stone: 5 }, { planks: 6, stone: 8 }],
   },
-  // Vergrößert das eigene Gebiet; kein Arbeiter
+  // Vergrößert das eigene Gebiet; kein Arbeiter. Stufe 1 nur aus Holz, damit man bei Steinmangel zu neuen Felsen kommt
   tower: {
-    name: 'Wachturm', group: 'base', unlock: 0, cost: { wood: 4, stone: 6 }, buildTime: 14, territory: [8, 10, 12],
+    name: 'Wachturm', group: 'base', unlock: 0, cost: { wood: 10 }, buildTime: 14, territory: [8, 10, 12],
     upgrades: [{ planks: 2, stone: 8 }, { planks: 5, stone: 10 }],
   },
   // Kein Arbeiter, kein Ausbau: Wohnhäuser im Umkreis bekommen mehr Platz (mehrere Brunnen zählen einmal)

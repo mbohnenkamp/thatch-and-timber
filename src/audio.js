@@ -58,13 +58,13 @@ class Audio {
     const data = this.noise.getChannelData(0);
     for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
 
-    // Echte Aufnahmen (MotionElements, lizenziert von Marco — nicht weitergeben).
-    // Fehlt eine Datei, bleibt der erzeugte Klang.
+    // Echte Aufnahmen: lokal MotionElements (lizenziert von Marco, nicht weitergeben, nicht im Repo),
+    // sonst freie CC0-Aufnahmen aus sounds-free/. Fehlt beides, bleibt der erzeugte Klang.
     this.samples = {};
+    const load = (path) => fetch(`${import.meta.env.BASE_URL}${path}`).then((res) => res.arrayBuffer()).then((data) => ctx.decodeAudioData(data));
     for (const [key, file] of Object.entries({ sheep: 'sheep.wav', crickets: 'crickets.m4a', owl: 'owl.m4a' })) {
-      fetch(`${import.meta.env.BASE_URL}sounds/${file}`)
-        .then((res) => res.arrayBuffer())
-        .then((data) => ctx.decodeAudioData(data))
+      load(`sounds/${file}`)
+        .catch(() => load(`sounds-free/${key}.m4a`))
         .then((buf) => {
           this.samples[key] = buf;
           if (key === 'crickets') this.startCrickets(buf);
