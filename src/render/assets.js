@@ -16,7 +16,8 @@ const LIST = {
     'crops_wheatStageA', 'crops_wheatStageB', 'log_stack', 'log_stackLarge', 'stump_round',
   ],
   // Eigene Modelle aus Blender (nach Marcos Entwürfen in entwuerfe/)
-  custom: ['horse', 'sheep', 'tree_a', 'tree_b', 'tree_c', 'pine_a', 'pine_b', 'pine_c', 'well', 'townhall'],
+  custom: ['horse', 'sheep', 'tree_a', 'tree_b', 'tree_c', 'pine_a', 'pine_b', 'pine_c', 'well', 'townhall',
+    'mine_ore', 'mine_coal', 'smelter', 'market', 'sheepfarm', 'tavern', 'chapel', 'plaza', 'monument'],
   chars: [
     'character-male-a', 'character-male-b', 'character-male-c',
     'character-female-a', 'character-female-b', 'character-female-c',

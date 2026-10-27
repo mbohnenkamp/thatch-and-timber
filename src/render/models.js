@@ -165,13 +165,39 @@ export function showCount(pileMesh, n) {
 const PILE_POS = Array.from({ length: 8 }, (_, i) => [-0.62 + (i % 2) * 0.12, Math.floor(i / 4) * 0.1, 0.05 + (Math.floor(i / 2) % 2) * 0.13]);
 const CRATE_POS = Array.from({ length: 8 }, (_, i) => [-0.2 + (i % 4) * 0.14, Math.floor(i / 4) * 0.1, -0.7]);
 
+// Eigene Modelle aus Blender (blender/*.py nach Marcos Entwürfen): Datei, Maßstab,
+// Schornstein für Rauch und Versatz des Warenstapels nach vorn (in Spielkoordinaten)
+const CUSTOM = {
+  townhall: { file: 'townhall', scale: 0.38 },
+  oremine: { file: 'mine_ore', scale: 0.35, pile: [0.55, 0.5] },
+  coalmine: { file: 'mine_coal', scale: 0.35, pile: [0.55, 0.5] },
+  smelter: { file: 'smelter', scale: 0.35, pile: [0.55, 0.55], chimney: [0.26, 1.0, 0.19] },
+  market: { file: 'market', scale: 0.35 },
+  sheepfarm: { file: 'sheepfarm', scale: 0.35, pile: [0.55, 0.5] },
+  tavern: { file: 'tavern', scale: 0.34, chimney: [0.24, 1.1, -0.12] },
+  chapel: { file: 'chapel', scale: 0.34 },
+  plaza: { file: 'plaza', scale: 0.38 },
+  monument: { file: 'monument', scale: 0.36 },
+};
+
+function customBuilding(type) {
+  const c = CUSTOM[type];
+  if (!c || !A.has(`custom/${c.file}`)) return null;
+  const g = new THREE.Group();
+  const m = A.model(`custom/${c.file}`);
+  m.scale.setScalar(c.scale);
+  g.add(m);
+  if (c.chimney) g.userData.chimney = new THREE.Vector3(...c.chimney);
+  return g;
+}
+
 export function buildingModel(type, level = 1, upgrading = false) {
   if (type === 'well') return wellModel();
-  if (type === 'townhall' && A.has('custom/townhall')) return townhallModel();
-  if (type === 'monument') return monumentModel();
-  if (type === 'plaza') return plazaModel();
-  const kit = A.has('town/wall') ? kitBuilding(type, level) : null;
-  const g = kit || new THREE.Group();
+  const custom = customBuilding(type);
+  if (!custom && type === 'monument') return monumentModel();
+  if (!custom && type === 'plaza') return plazaModel();
+  const kit = !custom && A.has('town/wall') ? kitBuilding(type, level) : null;
+  const g = custom || kit || new THREE.Group();
   const lift = (level - 1) * 0.16;
   if (kit) {
     g.add(type === 'warehouse' || type === 'farm' ? foundation(1.6, 0.9) : foundation(0.95, 0.9));
@@ -184,7 +210,7 @@ export function buildingModel(type, level = 1, upgrading = false) {
       g.userData.chimney = new THREE.Vector3(0.32 * S, (floors + 0.85) * S, -0.15 * S);
     }
   }
-  switch (kit ? null : type) {
+  switch (kit || custom ? null : type) {
     case 'warehouse': {
       g.add(foundation(1.5, 1.15));
       g.add(hut(1.3, 0.95, 0.62 + lift, 0.48, C.plaster, C.roofRed));
@@ -293,9 +319,9 @@ export function buildingModel(type, level = 1, upgrading = false) {
     }
   }
 
-  if (!kit && type !== 'house' && type !== 'warehouse' && level >= 2) g.add(annex(-0.5, -0.32, ROOF[type]));
-  if (!kit && type !== 'house' && level >= 3) g.add(annex(0.52, -0.34, ROOF[type]));
-  if (type === 'sheepfarm') g.add(fence());
+  if (!kit && !custom && type !== 'house' && type !== 'warehouse' && level >= 2) g.add(annex(-0.5, -0.32, ROOF[type]));
+  if (!kit && !custom && type !== 'house' && level >= 3) g.add(annex(0.52, -0.34, ROOF[type]));
+  if (type === 'sheepfarm' && !custom) g.add(fence());
   if ((type === 'tower' || type === 'townhall') && kit) g.add(towerFlag(type === 'townhall' ? 3 : level));
   if (LEVEL_FLAG[level - 1]) g.add(flag(LEVEL_FLAG[level - 1]));
   if (upgrading) g.add(scaffold());
@@ -305,6 +331,7 @@ export function buildingModel(type, level = 1, upgrading = false) {
     g.add(g.userData.crates);
   } else if (BUILDINGS[type].produces) {
     g.userData.pile = pile(ITEM_COLORS[BUILDINGS[type].produces], PILE_POS);
+    if (custom && CUSTOM[type].pile) g.userData.pile.position.set(CUSTOM[type].pile[0], 0, CUSTOM[type].pile[1]);
     g.add(g.userData.pile);
   }
   return g;
@@ -521,16 +548,8 @@ export function bridgeGhost(grid, x, z, span) {
   return ghostify(bridgeModel(grid, { x, z, span, done: true }));
 }
 
-// Rathaus aus Blender (entwuerfe/Rathaus.png), etwa zwei Felder breit
-function townhallModel() {
-  const g = new THREE.Group();
-  const m = A.model('custom/townhall');
-  m.scale.setScalar(0.38);
-  g.add(m);
-  return g;
-}
 
-// Denkmal: Stufensockel, Obelisk mit goldener Spitze, Fahnen an den Ecken
+// Ersatz ohne Blender-Modell — Denkmal: Stufensockel, Obelisk mit goldener Spitze, Fahnen an den Ecken
 function monumentModel() {
   const g = new THREE.Group();
   g.add(box(1.0, 0.1, 1.0, '#8f8a80'));

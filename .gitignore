@@ -6,3 +6,4 @@ assets-download/
 entwuerfe/*.wav
 # Lizenzierte Töne (MotionElements) — nicht veröffentlichen
 public/sounds/
+__pycache__/
