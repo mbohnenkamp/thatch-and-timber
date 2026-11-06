@@ -39,6 +39,8 @@ export class Game {
     this.hungerTime = 0;
     this.cityAt = null;
     this.metroAt = null;
+    this.castleAt = null;
+    this.territoryStamp = 0;
     this.happiness = 50;
     this.warmth = 0;
     this.clothGot = 0;
@@ -70,7 +72,23 @@ export class Game {
           if (Math.hypot(x - c.x, z - c.z) <= r + 0.3) t[z * N + x] = 1;
     }
     this.territoryDirty = false;
+    this.territoryStamp++;
     this.emit('territory', t);
+  }
+
+  // Mindesthöhe für die Burg: die höchsten Felder des eigenen, nicht zu steilen Landes (BUILDINGS.castle.high).
+  // Steile Hänge zählen nicht mit, sonst gäbe es im Bergland keinen erlaubten Platz (Testspieler 06.11.2026).
+  highGround() {
+    if (this.territoryDirty) this.updateTerritory();
+    if (this.highCache?.stamp === this.territoryStamp) return this.highCache.h;
+    const hs = [];
+    for (let z = 0; z < this.size; z++)
+      for (let x = 0; x < this.size; x++)
+        if (this.territory[z * this.size + x] && !this.grid.isWater(x, z) && this.grid.slope(x, z) <= 0.6) hs.push(this.grid.tileHeight(x, z));
+    hs.sort((a, b) => a - b);
+    const h = hs.length ? hs[Math.floor(hs.length * BUILDINGS.castle.high)] : -Infinity;
+    this.highCache = { stamp: this.territoryStamp, h };
+    return h;
   }
 
   inTerritory(x, z) {
@@ -512,6 +530,7 @@ export class Game {
     }
     this.roadsDirty = true;
     this.buildings.push(b);
+    if (BUILDINGS[type].wide) this.clearAround(b);
     if (BUILDINGS[type].span) {
       b.span = this.bridgeSpan(x, z);
       this.markBridge(b, true);
@@ -519,6 +538,26 @@ export class Game {
     if (done) this.territoryDirty = true;
     this.emit('building', b);
     return b;
+  }
+
+  // Bäume und Büsche rings um ein breites Gebäude fällen; das Holz kommt ins Lager
+  clearAround(b) {
+    const g = this.grid;
+    for (let dz = -1; dz <= 1; dz++)
+      for (let dx = -1; dx <= 1; dx++) {
+        if (!g.inBounds(b.x + dx, b.z + dz)) continue;
+        const i = g.idx(b.x + dx, b.z + dz);
+        const r = g.resource[i];
+        if (r < 0) continue;
+        const n = this.resources[r];
+        if (n.type !== 'tree' && n.type !== 'berry') continue;
+        if (n.type === 'tree' && n.amount > 0) this.store(b, 'wood', n.amount);
+        n.gone = true;
+        n.amount = 0;
+        n.reserved = false;
+        g.resource[i] = -1;
+        this.emit('resource', n);
+      }
   }
 
   startUpgrade(b) {
@@ -695,6 +734,7 @@ export class Game {
       hungerTime: Math.round(this.hungerTime),
       cityAt: this.cityAt,
       metroAt: this.metroAt,
+      castleAt: this.castleAt,
       happiness: Math.round(this.happiness),
       warmth: this.warmth,
       clothGot: this.clothGot,
@@ -729,6 +769,7 @@ export class Game {
     g.hungerTime = d.hungerTime || 0;
     g.cityAt = d.cityAt ?? null;
     g.metroAt = d.metroAt ?? null;
+    g.castleAt = d.castleAt ?? null;
     g.happiness = d.happiness ?? 50;
     g.warmth = d.warmth || 0;
     g.clothGot = d.clothGot || 0;

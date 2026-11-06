@@ -22,7 +22,8 @@ const WALL = { brewery: '#ece0c4', beekeeper: '#d8c49a', orchard: '#c9a77a', wea
 const WELL_ICON = '<svg viewBox="0 0 32 32"><rect x="8" y="10" width="2.5" height="12" fill="#9a5a30"/><rect x="21.5" y="10" width="2.5" height="12" fill="#9a5a30"/><path d="M5 12L16 5l11 7z" fill="#a2612f"/><rect x="7" y="19" width="18" height="9" rx="1.5" fill="#c9c9c6"/><path d="M7 23h18M12 19v4M20 19v4M16 23v5" stroke="#97979a" stroke-width="1"/><rect x="14.5" y="13" width="3" height="3.5" fill="#7a4a28"/></svg>';
 const BRIDGE_ICON = '<svg viewBox="0 0 32 32"><rect x="2" y="22" width="28" height="6" fill="#5d9bd0"/><path d="M3 18q13-8 26 0v3q-13-7-26 0z" fill="#a0703f"/><path d="M3 13q13-8 26 0" stroke="#8a5a32" stroke-width="1.5" fill="none"/><path d="M9 11v7M16 8.5v6M23 11v7" stroke="#8a5a32" stroke-width="1.5"/></svg>';
 const MONUMENT_ICON = '<svg viewBox="0 0 32 32"><rect x="6" y="25" width="20" height="3" fill="#a29f96"/><rect x="9" y="21" width="14" height="4" fill="#c9c9c6"/><path d="M13 21l1.5-15h3L19 21z" fill="#ddd8cc"/><path d="M14.5 6L16 3l1.5 3z" fill="#c9a227"/></svg>';
-const houseIcon = (t) => t === 'well' ? WELL_ICON : t === 'monument' ? MONUMENT_ICON : t === 'bridge' ? BRIDGE_ICON :
+const CASTLE_ICON = '<svg viewBox="0 0 32 32"><rect x="4" y="16" width="24" height="12" fill="#a29f96"/><path d="M4 16v-3h3v3h3v-3h3v3h6v-3h3v3h3v-3h3v3z" fill="#8f8a80"/><rect x="12" y="6" width="8" height="12" fill="#c9c9c6"/><path d="M12 6V4h2v2h1V4h2v2h1V4h2v2z" fill="#8f8a80"/><rect x="14" y="21" width="4" height="7" fill="#5b3a1e"/><path d="M16 2v4" stroke="#6e4423"/><path d="M16 2h5l-1.5 1.5L21 5h-5z" fill="#6a3f9a"/></svg>';
+const houseIcon = (t) => t === 'well' ? WELL_ICON : t === 'monument' ? MONUMENT_ICON : t === 'castle' ? CASTLE_ICON : t === 'bridge' ? BRIDGE_ICON :
   `<svg viewBox="0 0 32 32"><rect x="7" y="15" width="18" height="12" fill="${WALL[t]}"/><path d="M4 16L16 6l12 10z" fill="${ROOF[t]}"/><rect x="14" y="20" width="4" height="7" fill="#5b3a1e"/></svg>`;
 
 const minutes = (sec) => { const m = Math.round(sec / 60); return `${m} Minute${m === 1 ? '' : 'n'}`; };
@@ -281,16 +282,20 @@ export class Hud {
     else if (buildType) this.hint.textContent = `${BUILDINGS[buildType].name} platzieren: auf einen freien Platz tippen. Rechtsklick oder Esc bricht ab.`;
   }
 
-  // Ehrentafel beim Erreichen der Stadt und der Großstadt (später über Rathaus und Denkmal)
+  // Ehrentafel bei Stadt, Großstadt und Residenzstadt (später über Rathaus, Denkmal und Burg)
   showHonor(game, kind = 'city') {
     this.el.querySelector('#honor')?.remove();
-    const metro = kind === 'metro';
-    const t = (metro ? game.metroAt : game.cityAt) ?? game.time;
+    const HONOR = {
+      city: { at: game.cityAt, rank: 'Stadt', text: 'Du kannst weiterspielen. Neu freigeschaltet: Rathaus und Denkmal. Das Denkmal macht die Stadt zur Großstadt.' },
+      metro: { at: game.metroAt, rank: 'Großstadt', text: 'Neu freigeschaltet: die Burg. Baue sie auf einer Anhöhe in drei Abschnitten, dann wird deine Stadt zur Residenzstadt.' },
+      castle: { at: game.castleAt, rank: 'Residenzstadt', text: 'Alle Aufgaben sind erfüllt. Du kannst weiterspielen und deine Stadt ausbauen.' },
+    }[kind];
+    const t = HONOR.at ?? game.time;
     const days = Math.max(1, Math.round(t / (SEASON_LENGTH / 2)));
     const size = Object.values(MAP_SIZES).find((m) => m.size === game.size)?.name || '';
     const rows = [
       ['Karte', `${MAPS[game.mapType].name}${size ? `, ${size}` : ''}`],
-      [metro ? 'Großstadt nach' : 'Stadt nach', `${days} Spieltag${days === 1 ? '' : 'en'} (Jahr ${Math.floor(t / SEASON_LENGTH / 4) + 1})`],
+      [`${HONOR.rank} nach`, `${days} Spieltag${days === 1 ? '' : 'en'} (Jahr ${Math.floor(t / SEASON_LENGTH / 4) + 1})`],
       ['Spielzeit bei 1×', minutes(t)],
       ['Siedler', game.settlers.length],
       ['Gebäude', game.buildings.filter((b) => b.done && !b.removed).length],
@@ -300,9 +305,9 @@ export class Hud {
     el.id = 'honor';
     el.innerHTML = `<div class="card">
       <h2>Ehrentafel</h2>
-      <p class="town">${game.townName} ist eine ${metro ? 'Großstadt' : 'Stadt'}!</p>
+      <p class="town">${game.townName} ist eine ${HONOR.rank}!</p>
       <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
-      <p>${metro ? 'Alle Aufgaben sind erfüllt. Du kannst weiterspielen und deine Stadt ausbauen.' : 'Du kannst weiterspielen. Neu freigeschaltet: Rathaus und Denkmal. Das Denkmal macht die Stadt zur Großstadt.'}</p>
+      <p>${HONOR.text}</p>
       <button class="btn">Weiterspielen</button>
     </div>`;
     el.querySelector('button').onclick = () => el.remove();
@@ -509,7 +514,7 @@ export class Hud {
       return `<h3>${def.name}</h3>${p.join('')}`;
     }
 
-    if (def.upgrades) p.push(`<p><em>Stufe:</em> ${ref.level} von ${MAX_LEVEL}</p>`);
+    if (def.upgrades && !def.stages) p.push(`<p><em>Stufe:</em> ${ref.level} von ${MAX_LEVEL}</p>`);
     if (def.job) {
       const names = ref.workers.map((w) => w.name).join(', ') || 'noch niemand';
       p.push(`<p><em>${def.job}:</em> ${names} (${ref.workers.length}/${slots(ref)})</p>`);
@@ -574,6 +579,10 @@ export class Hud {
       p.push(`<p>Das Denkmal erinnert an die Gründung von ${game.townName}.</p>`);
       if (game.metroAt != null) p.push('<button class="secondary" data-act="honor-metro">Ehrentafel ansehen</button>');
     }
+    if (ref.type === 'castle' && ref.done) {
+      p.push(`<p><em>Bauabschnitt:</em> ${def.stages.slice(0, ref.level).join(', ')}${ref.level < def.stages.length ? ` · noch offen: ${def.stages.slice(ref.level).join(', ')}` : ' · fertig'}</p>`);
+      if (game.castleAt != null) p.push('<button class="secondary" data-act="honor-castle">Ehrentafel ansehen</button>');
+    }
     if (def.territory) p.push(`<p><em>Gebiet:</em> Radius ${def.territory[ref.level - 1]} Felder</p>`);
     if (ref.type === 'well') {
       const homes = game.buildings.filter((h) => h.type === 'house' && h.done && Math.hypot(h.x - ref.x, h.z - ref.z) <= def.radius).length;
@@ -588,7 +597,7 @@ export class Hud {
     }
 
     if (ref.upgrading) {
-      p.push(`<p><em>Ausbau auf Stufe ${ref.level + 1}:</em> ${Math.round(ref.progress * 100)} %</p>`);
+      p.push(`<p><em>${def.stages ? `Bauabschnitt ${def.stages[ref.level]}` : `Ausbau auf Stufe ${ref.level + 1}`}:</em> ${Math.round(ref.progress * 100)} %</p>`);
       p.push(`<p><em>Material:</em> ${mats(siteCost(ref))}</p>`);
       p.push(`<p>${this.siteReason(game, ref)}</p>`);
       p.push('<button class="secondary" data-act="cancel-upgrade">Ausbau abbrechen</button>');
@@ -596,7 +605,7 @@ export class Hud {
       const cost = upgradeCost(ref);
       if (cost) {
         const ok = game.canAfford(cost);
-        p.push(`<button class="upgrade" data-act="upgrade" ${ok ? '' : 'disabled'}>Ausbauen auf Stufe ${ref.level + 1}<small>${costText(cost)}${ok ? '' : ' (fehlt)'}</small></button>`);
+        p.push(`<button class="upgrade" data-act="upgrade" ${ok ? '' : 'disabled'}>${def.stages ? `Weiterbauen: ${def.stages[ref.level]}` : `Ausbauen auf Stufe ${ref.level + 1}`}<small>${costText(cost)}${ok ? '' : ' (fehlt)'}</small></button>`);
       }
     }
     const err = game.demolishError(ref);

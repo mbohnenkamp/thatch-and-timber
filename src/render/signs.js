@@ -10,6 +10,7 @@ const STYLE = [
   { board: '#f2c230', ink: '#1a1a1a', w: 1.1, h: 0.48, posts: 2, frame: '#1a1a1a', stone: true },
   { board: '#f2c230', ink: '#1a1a1a', w: 1.2, h: 0.52, posts: 2, frame: '#1a1a1a', stone: true, crest: true, flags: true },
   { board: '#f2c230', ink: '#1a1a1a', w: 1.35, h: 0.58, posts: 2, frame: '#8a6a12', stone: true, crest: true, flags: true },
+  { board: '#f6d860', ink: '#1a1a1a', w: 1.5, h: 0.62, posts: 2, frame: '#6a3f9a', stone: true, crest: true, flags: true },
 ];
 const MAX_SIGNS = 4;
 

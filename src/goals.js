@@ -4,8 +4,10 @@ import { BUILDINGS } from './config.js';
 // progress(g) liefert [erreicht, Ziel]; rank = Dorfstufe nach Erledigung.
 const count = (g, type, ok = (b) => b.done) => g.buildings.filter((b) => b.type === type && !b.removed && ok(b)).length;
 
-export const RANKS = ['Weiler', 'Dorf', 'Marktflecken', 'Kleinstadt', 'Stadt', 'Großstadt'];
+export const RANKS = ['Weiler', 'Dorf', 'Marktflecken', 'Kleinstadt', 'Stadt', 'Großstadt', 'Residenzstadt'];
 export const CITY = 4;
+export const METRO = 5;
+export const RESIDENCE = 6;
 
 export const GOALS = [
   { text: 'Wachse auf 10 Siedler', progress: (g) => [g.settlers.length, 10], reward: { wood: 10 }, rank: 0 },
@@ -20,6 +22,11 @@ export const GOALS = [
   { text: 'Baue das Rathaus', progress: (g) => [count(g, 'townhall'), 1], reward: { planks: 10, iron: 4 }, rank: 4 },
   { text: 'Wachse auf 100 Siedler', progress: (g) => [g.settlers.length, 100], reward: { stone: 30, planks: 15, iron: 6 }, rank: 4 },
   { text: 'Errichte das Denkmal', progress: (g) => [count(g, 'monument'), 1], reward: { wood: 50, stone: 50 }, rank: 5 },
+  // Nach der Großstadt (V6): neue Ketten, dann die Burg
+  { text: 'Webe Tuch: lege 20 Tuch auf Vorrat', progress: (g) => [g.total('cloth'), 20], reward: { planks: 10, stone: 10 }, rank: 5 },
+  { text: 'Braue Bier: baue eine Brauerei', progress: (g) => [count(g, 'brewery'), 1], reward: { wood: 20, stone: 20 }, rank: 5 },
+  { text: 'Wachse auf 150 Siedler', progress: (g) => [g.settlers.length, 150], reward: { stone: 40, planks: 20, iron: 10 }, rank: 5 },
+  { text: 'Errichte die Burg mit Mauer, Türmen und Bergfried', progress: (g) => [count(g, 'castle', (b) => b.done && b.level >= 3 && !b.upgrading), 1], reward: { wood: 50, stone: 50 }, rank: 6 },
 ];
 
 export const currentGoal = (g) => GOALS[g.goal] || null;
@@ -44,6 +51,7 @@ export function updateGoals(g, dt) {
   const rankUp = rankOf(g) !== before;
   let honor = null;
   if (rankIndex(g) === CITY && g.cityAt == null) { g.cityAt = g.time; honor = 'city'; }
-  if (!currentGoal(g)) { g.metroAt = g.time; honor = 'metro'; }
+  if (rankUp && rankIndex(g) === METRO && g.metroAt == null) { g.metroAt = g.time; honor = 'metro'; }
+  if (rankUp && rankIndex(g) === RESIDENCE && g.castleAt == null) { g.castleAt = g.time; honor = 'castle'; }
   g.emit('goal', { goal, reward: goal.reward, rank: rankOf(g), rankUp, unlocked: rankUp ? unlockedAt(rankIndex(g)) : [], honor });
 }

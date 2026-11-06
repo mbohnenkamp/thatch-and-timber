@@ -196,6 +196,7 @@ export function buildingModel(type, level = 1, upgrading = false) {
   if (type === 'well') return wellModel();
   const custom = customBuilding(type);
   if (!custom && type === 'monument') return monumentModel();
+  if (!custom && type === 'castle') return castleModel(level, upgrading);
   if (!custom && type === 'plaza') return plazaModel();
   const kit = !custom && A.has('town/wall') ? kitBuilding(type, level) : null;
   const g = custom || kit || new THREE.Group();
@@ -597,6 +598,41 @@ function monumentModel() {
   for (const [x, z] of [[-0.42, -0.42], [0.42, -0.42], [-0.42, 0.42], [0.42, 0.42]]) {
     g.add(box(0.03, 0.55, 0.03, '#6e4423', x, 0.1, z));
     g.add(box(0.02, 0.12, 0.18, '#b3472f', x, 0.5, z + 0.09));
+  }
+  return g;
+}
+
+// Burg in drei Bauabschnitten: Mauer mit Tor, dann Ecktürme, dann der Bergfried
+function castleModel(level, upgrading) {
+  const g = new THREE.Group();
+  const W = 1.9, H = 0.5, T = 0.14, wall = '#a29f96', top = '#8f8a80';
+  g.add(box(W + 0.2, 0.12, W + 0.2, '#8f8a80', 0, -0.05, 0));
+  for (const s of [-1, 1]) {
+    g.add(box(W, H, T, wall, 0, 0, s * (W / 2)));
+    g.add(box(T, H, W, wall, s * (W / 2), 0, 0));
+  }
+  // Zinnen
+  for (let i = -3; i <= 3; i++)
+    for (const s of [-1, 1]) {
+      g.add(box(0.12, 0.1, T, top, i * 0.26, H, s * (W / 2)));
+      g.add(box(T, 0.1, 0.12, top, s * (W / 2), H, i * 0.26));
+    }
+  g.add(box(0.36, 0.38, 0.06, '#5b3a1e', 0, 0, W / 2 + 0.05));
+  if (level >= 2)
+    for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      g.add(cyl(0.2, 0.22, 0.95, 8, wall, (x * W) / 2, 0, (z * W) / 2));
+      g.add(cyl(0, 0.26, 0.36, 8, '#b3472f', (x * W) / 2, 0.95, (z * W) / 2));
+    }
+  if (level >= 3) {
+    g.add(box(0.7, 1.45, 0.7, C.stone, 0, 0, -0.15));
+    for (const [x, z] of [[-0.3, -0.45], [0.3, -0.45], [-0.3, 0.15], [0.3, 0.15]]) g.add(box(0.14, 0.14, 0.14, top, x, 1.45, z));
+    g.add(box(0.03, 0.7, 0.03, C.darkWood, 0, 1.45, -0.15));
+    g.add(box(0.02, 0.2, 0.34, '#6a3f9a', 0, 1.9, 0.02));
+  }
+  if (upgrading) {
+    const sc = scaffold();
+    sc.scale.set(1.6, 1.5, 1.6);
+    g.add(sc);
   }
   return g;
 }

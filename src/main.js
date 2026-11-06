@@ -131,7 +131,7 @@ function start(game, isNew = false) {
         select(null);
       } else if (act === 'upgrade') game.startUpgrade(b);
       else if (act === 'cancel-upgrade') game.cancelUpgrade(b);
-      else if (act === 'honor' || act === 'honor-metro') hud.showHonor(game, act === 'honor' ? 'city' : 'metro');
+      else if (act.startsWith('honor')) hud.showHonor(game, { honor: 'city', 'honor-metro': 'metro', 'honor-castle': 'castle' }[act]);
       else if (act.startsWith('give:') || act.startsWith('get:')) {
         const [side, item] = act.split(':');
         const next = { ...(b.trade || b.pending), [side]: item };

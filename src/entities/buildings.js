@@ -109,7 +109,7 @@ export function placeError(game, type, x, z, free = false) {
   const g = game.grid;
   const def = BUILDINGS[type];
   if (!isUnlocked(game, type)) return `${def.name} gibt es ab der Stufe ${RANKS[def.unlock]}`;
-  if (def.unique && game.buildings.some((b) => b.type === type && !b.removed)) return `Es gibt schon ein ${def.name}`;
+  if (def.unique && game.buildings.some((b) => b.type === type && !b.removed)) return `Es gibt schon ${def.article || 'ein'} ${def.name}`;
   if (!g.inBounds(x, z)) return 'Außerhalb der Karte';
   if (!free && !game.canAfford(def.cost)) return 'Nicht genug Material im Lager';
   if (x < 1 || z < 1 || x >= g.size - 1 || z >= g.size - 1) return 'Zu nah am Kartenrand';
@@ -125,6 +125,17 @@ export function placeError(game, type, x, z, free = false) {
   if (g.bridge[g.idx(x, z)] >= 0) return 'Hier beginnt eine Brücke';
   if (g.resource[g.idx(x, z)] >= 0 || g.field[g.idx(x, z)] >= 0) return 'Hier steht schon etwas';
   if (g.slope(x, z) > 0.6) return 'Zu steil zum Bauen';
+  // Breites Gebäude (Burg): ringsum keine Felsen, Felder oder Wasser; Bäume werden beim Bau gefällt
+  if (def.wide) {
+    for (let dz = -1; dz <= 1; dz++)
+      for (let dx = -1; dx <= 1; dx++) {
+        const i = g.idx(x + dx, z + dz);
+        if (g.isWater(x + dx, z + dz) || g.field[i] >= 0 || g.bridge[i] >= 0) return 'Zu wenig Platz: die Burg braucht ringsum ein freies Feld';
+        const r = g.resource[i];
+        if (r >= 0 && !['tree', 'berry'].includes(game.resources[r].type)) return 'Felsen im Weg: die Burg braucht ringsum ein freies Feld';
+      }
+  }
+  if (def.high && g.tileHeight(x, z) < game.highGround()) return `${def.name} braucht eine Anhöhe: einen der höchsten Plätze in deinem Gebiet`;
   for (let dz = -1; dz <= 1; dz++)
     for (let dx = -1; dx <= 1; dx++)
       if (g.building[g.idx(x + dx, z + dz)] >= 0) return 'Zu nah an einem anderen Gebäude';

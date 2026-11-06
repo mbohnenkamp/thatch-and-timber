@@ -125,18 +125,19 @@ export function makeBot(g) {
       const s = spot(t);
       if (s) { g.place(t, s.x, s.z); note(`baut ${BUILDINGS[t].name}`); return; }
     }
-    // Großes Dorf: zweites Lagerhaus (mehr Träger) und zweite Bauhütte
+    // Großes Dorf: zweites Lagerhaus (mehr Träger) und zweite Bauhütte; große Stadt: bis zu vier Lager
     for (const t of ['warehouse', 'builderhut']) {
-      if (!isUnlocked(g, 'warehouse') || of(t).length >= 2 || !g.canAfford(BUILDINGS[t].cost)) continue;
+      const max = t === 'warehouse' && g.settlers.length > 150 ? 4 : 2;
+      if (!isUnlocked(g, 'warehouse') || of(t).length >= max || of(t).some(isSite) || !g.canAfford(BUILDINGS[t].cost)) continue;
       const s = spot(t);
-      if (s) { g.place(t, s.x, s.z); note(`baut zweite${t === 'warehouse' ? 's Lagerhaus' : ' Bauhütte'}`); return; }
+      if (s) { g.place(t, s.x, s.z); note(`baut ${of(t).length + 1}. ${t === 'warehouse' ? 'Lagerhaus' : 'Bauhütte'}`); return; }
     }
     // Als Stadt: Rathaus, dann (ab 100 Siedlern) das Denkmal
     if (isUnlocked(g, 'townhall') && markets.length === 1 && g.canAfford(BUILDINGS.market.cost)) {
       const s = spot('market');
       if (s) { g.place('market', s.x, s.z); note('baut zweiten Markt'); return; }
     }
-    for (const t of ['townhall', 'monument']) {
+    for (const t of ['townhall', 'monument', 'castle']) {
       if (!isUnlocked(g, t) || of(t).length || (t === 'monument' && g.settlers.length < 100) || !g.canAfford(BUILDINGS[t].cost)) continue;
       const s = spot(t);
       if (s) { g.place(t, s.x, s.z); note(`baut ${BUILDINGS[t].name}`); return; }
@@ -177,7 +178,7 @@ export function makeBot(g) {
       }
     } else if (type === 'fisher') next++;
     // Ausbauen: Lagerhaus, dann Wohnhäuser
-    for (const b of [...of('warehouse'), ...of('house'), ...of('sawmill')]) {
+    for (const b of [...of('castle'), ...of('warehouse'), ...of('house'), ...of('sawmill')]) {
       const cost = upgradeCost(b);
       if (cost && g.canAfford(cost) && openSites() < 2) {
         g.startUpgrade(b);

@@ -1,4 +1,4 @@
-export const VERSION = '5.6';
+export const VERSION = '6.3';
 export const ISSUES_URL = 'https://github.com/mbohnenkamp/thatch-and-timber/issues/new';
 
 // Kartengrößen in Feldern; alte Spielstände ohne Angabe sind 64
@@ -142,7 +142,8 @@ export const BUILDINGS = {
   // Tauscht laufend eine Ware gegen eine andere; lässt keep Stück der abgegebenen Ware im Lager
   market: {
     name: 'Markt', group: 'craft', unlock: 2, cost: { wood: 6, stone: 4, planks: 4 }, buildTime: 16, job: 'Händler',
-    trade: true, workTime: 6, stockLimit: 40, keep: 10,
+    // Pausiert ab 100 eingetauschter Ware (vorher 40; die Burg braucht 50 Stein in einem Abschnitt)
+    trade: true, workTime: 6, stockLimit: 100, keep: 10,
     upgrades: [{ planks: 4, stone: 4 }, { planks: 6, stone: 6 }],
   },
   // Eigene Herde am Hof; der Schäfer melkt, Milch zählt direkt als Nahrung
@@ -225,6 +226,13 @@ export const BUILDINGS = {
   // Krönung der Stadt: kein Arbeiter, nur einmal; fertig gebaut wird die Stadt zur Großstadt
   monument: {
     name: 'Denkmal', group: 'town', unlock: 4, cost: { stone: 30, planks: 20, iron: 8 }, buildTime: 60, unique: true,
+  },
+  // Krönung der Großstadt: auf einer Anhöhe (höchste 40 % des nicht zu steilen Landes im Gebiet), in drei Bauabschnitten.
+  // Fertig wird die Stadt zur Residenzstadt; die Burg vergrößert das Gebiet.
+  castle: {
+    name: 'Burg', group: 'town', unlock: 5, cost: { stone: 40, wood: 20 }, buildTime: 60, unique: true, article: 'eine', high: 0.6, wide: true,
+    territory: [12, 14, 16], stages: ['Mauer', 'Türme', 'Bergfried'],
+    upgrades: [{ stone: 40, planks: 20, iron: 10 }, { stone: 50, planks: 20, iron: 10, cloth: 10, beer: 10 }],
   },
   // Vom Ufer geradeaus übers Wasser (höchstens span Felder); am anderen Ufer ein kleines Gebiet als Brückenkopf
   bridge: {

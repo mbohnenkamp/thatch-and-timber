@@ -564,6 +564,9 @@ function planTransport(game, s, cap, reach, reachWarehouse) {
   // Voll = die nächste Lieferung passt nicht mehr in die Ablage (Obst, Getreide kommen mehrere auf einmal)
   const fullHut = nearest(s, huts.filter((b) => b.output + batchOf(game, b) > outputCap(b)));
   if (fullHut) return collect(game, s, fullHut, cap, warehouses), true;
+  // Nebenprodukt am Limit (Wolle am Hof): ebenso dringend, sonst bleibt es in großen Städten für immer liegen
+  const fullSide = nearest(s, game.buildings.filter((b) => b.done && !b.removed && reach(b) && sideAtCap(b)));
+  if (fullSide) return collectSide(game, s, fullSide, Object.keys(fullSide.side).find((k) => sideFree(fullSide, k) >= 2), cap, warehouses), true;
 
   const task = findDelivery(game, s, cap, reach, warehouses);
   if (task) return deliver(game, s, task), true;
@@ -639,6 +642,7 @@ function collect(game, s, hut, cap, warehouses) {
 }
 
 const sideFree = (b, item) => (b.side[item] || 0) - (b.sideReserved[item] || 0);
+const sideAtCap = (b) => BUILDINGS[b.type].side && sideFree(b, BUILDINGS[b.type].side) >= BUILDINGS[b.type].woolCap - 1;
 
 function collectSide(game, s, hut, item, cap, warehouses) {
   const amount = Math.min(cap, sideFree(hut, item));
