@@ -23,6 +23,13 @@ export function happinessParts(g) {
     const share = coverage(g, type, houses);
     parts.push([`${BUILDINGS[type].name} (${Math.round(share * 100)} % der Häuser)`, Math.round(share * max)]);
   }
+  // Bier im Wirtshaus: Anteil der Häuser im Umkreis eines Wirtshauses, das gerade Bier ausschenkt
+  const beerTaverns = g.buildings.filter((b) => b.type === 'tavern' && b.done && !b.removed && b.beerUntil > g.time);
+  if (beerTaverns.length && houses.length) {
+    const r = BUILDINGS.tavern.radius;
+    const share = houses.filter((h) => beerTaverns.some((b) => Math.hypot(b.x - h.x, b.z - h.z) <= r)).length / houses.length;
+    parts.push([`Bier im Wirtshaus (${Math.round(share * 100)} % der Häuser)`, Math.round(share * HAPPINESS.beer)]);
+  }
   if (g.season.key === 'winter') parts.push(['Warme Kleidung im Winter', Math.round((g.warmth || 0) * WARMTH.mood)]);
   if (g.hungry) parts.push(['Hunger', -HAPPINESS.hunger]);
   if (g.settlers.length >= g.housing) parts.push(['Alle Wohnungen voll', -HAPPINESS.crowded]);

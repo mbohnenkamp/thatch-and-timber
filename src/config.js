@@ -65,6 +65,8 @@ export const NO_TOOL_JOBS = ['Träger', 'Bauarbeiter', 'Werkzeugmacher', 'Bergma
 export const HAPPINESS = {
   base: 50, perFood: 5, hunger: 30, crowded: 5, effect: 0.15,
   cover: { well: 10, tavern: 15, chapel: 10, plaza: 10 },
+  // Wirtshaus schenkt Bier statt Brot: zusätzlich bis so viele Punkte
+  beer: 10,
 };
 // Winter: je Siedler so viel Tuch für warme Kleidung. Versorgte brauchen keine zusätzliche Nahrung
 // (SEASONS.winter.hunger) und sind zufriedener (bis mood Punkte)
@@ -204,7 +206,13 @@ export const BUILDINGS = {
   // Wirt schenkt aus: verbraucht 1 Brot je Ausschank, danach ist das Wirtshaus serveTime Sekunden offen
   tavern: {
     name: 'Wirtshaus', group: 'town', unlock: 1, cost: { wood: 8, stone: 4, planks: 4 }, buildTime: 16, job: 'Wirt',
-    consumes: { bread: 1 }, serves: true, workTime: 30, serveTime: 90, radius: 10,
+    consumes: { bread: 1 }, supplies: { beer: 1, bread: 1 }, serves: true, workTime: 30, serveTime: 90, radius: 10,
+    upgrades: [{ planks: 4, stone: 4 }, { planks: 6, stone: 6 }],
+  },
+  // Braut aus Getreide Bier fürs Wirtshaus; braucht Wasser aus einem Brunnen in der Nähe
+  brewery: {
+    name: 'Brauerei', group: 'town', unlock: 2, cost: { wood: 6, stone: 6, planks: 4 }, buildTime: 16, job: 'Brauer',
+    consumes: { grain: 2 }, produces: 'beer', workTime: 12, stockLimit: 20, needsWell: 6,
     upgrades: [{ planks: 4, stone: 4 }, { planks: 6, stone: 6 }],
   },
   // Kein Arbeiter: Wohnhäuser im Umkreis sind zufriedener

@@ -51,7 +51,7 @@ export function makeBot(g) {
 
   const ORDER = [
     'woodcutter', 'gatherer', 'quarry', 'fisher', 'house', 'woodcutter', 'farm', 'sawmill', 'quarry', 'house', 'mill',
-    'bakery', 'well', 'toolmaker', 'oremine', 'coalmine', 'smelter', 'sheepfarm', 'weaver', 'beekeeper', 'orchard', 'house', 'woodcutter', 'gatherer', 'house', 'farm', 'house', 'sheepfarm', 'house', 'house',
+    'bakery', 'well', 'toolmaker', 'oremine', 'coalmine', 'smelter', 'sheepfarm', 'weaver', 'beekeeper', 'orchard', 'brewery', 'house', 'woodcutter', 'gatherer', 'house', 'farm', 'house', 'sheepfarm', 'house', 'house',
   ];
   let next = 0;
   const log = [];
@@ -161,7 +161,7 @@ export function makeBot(g) {
           if (type === ORDER[next]) next++;
           return;
         }
-        if (type === 'fisher') { next++; return; }   // kein Wasser in Reichweite
+        if (type === 'fisher' || type === 'brewery') { next++; return; }   // kein Wasser bzw. kein Brunnen in Reichweite
         // Kein Erz/keine Kohle im Gebiet: Wachturm dorthin, sonst auslassen (der Markt liefert Eisen)
         const dep = BUILDINGS[type].resource;
         if (dep === 'ore' || dep === 'coal') {

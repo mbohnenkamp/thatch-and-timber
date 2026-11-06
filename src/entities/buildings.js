@@ -93,8 +93,12 @@ export const outputAmount = (b) => (BUILDINGS[b.type].trade && b.trade ? tradeRa
 // Was ein Arbeitsgang verbraucht: { ware: menge }
 export function recipe(b) {
   if (BUILDINGS[b.type].trade) return b.trade ? { [b.trade.give]: tradeRate(b.trade.give, b.trade.get).give } : {};
+  // Wirtshaus: Bier, wenn welches da ist, sonst Brot
+  if (BUILDINGS[b.type].serves) return (b.inputs.beer || 0) >= 1 ? { beer: 1 } : { bread: 1 };
   return BUILDINGS[b.type].consumes || {};
 }
+// Was die Träger anliefern (Wirtshaus: Bier und Brot)
+export const wants = (b) => BUILDINGS[b.type].supplies || recipe(b);
 export const hasInputs = (b) => Object.entries(recipe(b)).every(([k, n]) => (b.inputs[k] || 0) >= n);
 export function useInputs(b) {
   for (const [k, n] of Object.entries(recipe(b))) b.inputs[k] -= n;
@@ -125,5 +129,6 @@ export function placeError(game, type, x, z, free = false) {
     for (let dx = -1; dx <= 1; dx++)
       if (g.building[g.idx(x + dx, z + dz)] >= 0) return 'Zu nah an einem anderen Gebäude';
   if (def.needsWater && !g.waterNear(x, z, 3)) return 'Die Fischerhütte braucht Wasser in der Nähe';
+  if (def.needsWell && !game.buildings.some((w) => w.type === 'well' && !w.removed && Math.hypot(w.x - x, w.z - z) <= def.needsWell)) return `${def.name} braucht einen Brunnen in der Nähe (höchstens ${def.needsWell} Felder)`;
   return null;
 }

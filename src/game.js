@@ -707,6 +707,7 @@ export class Game {
         ...(b.span && { span: b.span }),
         ...(b.trade && { trade: b.trade }),
         ...(b.servedUntil && { servedUntil: b.servedUntil }),
+        ...(b.beerUntil && { beerUntil: b.beerUntil }),
       })),
       roadPlans: this.roadPlans.map((p) => [p.x, p.z]),
       roads: [...this.grid.traffic].flatMap((t, i) => (t > 0 ? [[i, Math.round(t * 10) / 10, this.grid.road[i]]] : [])),
@@ -757,6 +758,7 @@ export class Game {
         inputs: bd.inputs || (bd.input ? { [Object.keys(BUILDINGS[bd.type].consumes)[0]]: bd.input } : {}),
         trade: bd.trade || null,
         servedUntil: bd.servedUntil || 0,
+        beerUntil: bd.beerUntil || 0,
         side: bd.side || {},
       });
       if (bd.stock) Object.assign(b.stock, bd.stock);

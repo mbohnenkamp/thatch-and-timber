@@ -324,6 +324,7 @@ export function buildingModel(type, level = 1, upgrading = false) {
   if (!kit && !custom && type !== 'house' && level >= 3) g.add(annex(0.52, -0.34, ROOF[type]));
   if (type === 'sheepfarm' && !custom) g.add(fence());
   if (type === 'beekeeper') hives(g);
+  if (type === 'brewery') for (const [x, z] of [[1.0, 0.5], [1.0, 0.25], [-1.0, 0.5]]) g.add(cyl(0.1, 0.1, 0.24, 8, '#8a5a32', x, 0, z));
   if ((type === 'tower' || type === 'townhall') && kit) g.add(towerFlag(type === 'townhall' ? 3 : level));
   if (LEVEL_FLAG[level - 1]) g.add(flag(LEVEL_FLAG[level - 1]));
   if (upgrading) g.add(scaffold());

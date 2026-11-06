@@ -165,6 +165,9 @@ export function kitBuilding(type, level) {
       inner = house({ floors: [wood], door: 'wall-wood-door', window: 'wall-wood-window-shutters', roof: 'roof-gable', roofColor: 'thatch' });
       extras.push(nature('plant_bushDetailed', 0.75, 0, 0.35, 0, 0.8));
       break;
+    case 'brewery':
+      inner = house({ width: 2, floors: [stone, wood], door: 'wall-door', window: 'wall-window-shutters', roof: 'roof-gable', roofColor: 'brown', chimney: true });
+      break;
     case 'weaver':
       inner = house({ floors: [stone, wood], door: 'wall-wood-door', window: 'wall-wood-window-shutters', roof: 'roof-gable', roofColor: 'red' });
       extras.push(part('stall-red', 0.8, 0, 0.35, Math.PI / 2, 0.45));

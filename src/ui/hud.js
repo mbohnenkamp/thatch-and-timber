@@ -17,8 +17,8 @@ const ICONS = {
   people: '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.5" fill="#f0c39b"/><path d="M6 21c0-5 3-8 6-8s6 3 6 8z" fill="#7a6a55"/></svg>',
 };
 
-const ROOF = { beekeeper: '#c9a24a', orchard: '#c9a24a', weaver: '#b3472f', tavern: '#7a5230', chapel: '#6d6a64', plaza: '#a29f96', monument: '#c9a227', townhall: '#b3472f', oremine: '#6d6a64', coalmine: '#3b3735', smelter: '#b3472f', market: '#c6283c', sawmill: '#7a5230', toolmaker: '#b3472f', tower: '#b3472f', sheepfarm: '#c9a24a', well: '#a2612f', warehouse: '#b3472f', builderhut: '#7a5230', farm: '#c9a24a', mill: '#8a5a32', bakery: '#b3472f', woodcutter: '#c9a24a', quarry: '#6d6a64', gatherer: '#c9a24a', fisher: '#5d7d95', house: '#b3472f' };
-const WALL = { beekeeper: '#d8c49a', orchard: '#c9a77a', weaver: '#c9a77a', tavern: '#c9a77a', chapel: '#ece0c4', plaza: '#c9c9c6', monument: '#c9c9c6', townhall: '#ece0c4', oremine: '#c0714a', coalmine: '#a29f96', smelter: '#a29f96', market: '#e8c440', sawmill: '#c9a77a', toolmaker: '#a29f96', tower: '#c9c9c6', sheepfarm: '#c9a77a', well: '#c9c9c6', warehouse: '#ece0c4', builderhut: '#c9a77a', farm: '#e2d2a8', mill: '#ece0c4', bakery: '#ece0c4', woodcutter: '#c9a77a', quarry: '#a29f96', gatherer: '#d8c49a', fisher: '#b9a27e', house: '#ece0c4' };
+const ROOF = { brewery: '#7a5230', beekeeper: '#c9a24a', orchard: '#c9a24a', weaver: '#b3472f', tavern: '#7a5230', chapel: '#6d6a64', plaza: '#a29f96', monument: '#c9a227', townhall: '#b3472f', oremine: '#6d6a64', coalmine: '#3b3735', smelter: '#b3472f', market: '#c6283c', sawmill: '#7a5230', toolmaker: '#b3472f', tower: '#b3472f', sheepfarm: '#c9a24a', well: '#a2612f', warehouse: '#b3472f', builderhut: '#7a5230', farm: '#c9a24a', mill: '#8a5a32', bakery: '#b3472f', woodcutter: '#c9a24a', quarry: '#6d6a64', gatherer: '#c9a24a', fisher: '#5d7d95', house: '#b3472f' };
+const WALL = { brewery: '#ece0c4', beekeeper: '#d8c49a', orchard: '#c9a77a', weaver: '#c9a77a', tavern: '#c9a77a', chapel: '#ece0c4', plaza: '#c9c9c6', monument: '#c9c9c6', townhall: '#ece0c4', oremine: '#c0714a', coalmine: '#a29f96', smelter: '#a29f96', market: '#e8c440', sawmill: '#c9a77a', toolmaker: '#a29f96', tower: '#c9c9c6', sheepfarm: '#c9a77a', well: '#c9c9c6', warehouse: '#ece0c4', builderhut: '#c9a77a', farm: '#e2d2a8', mill: '#ece0c4', bakery: '#ece0c4', woodcutter: '#c9a77a', quarry: '#a29f96', gatherer: '#d8c49a', fisher: '#b9a27e', house: '#ece0c4' };
 const WELL_ICON = '<svg viewBox="0 0 32 32"><rect x="8" y="10" width="2.5" height="12" fill="#9a5a30"/><rect x="21.5" y="10" width="2.5" height="12" fill="#9a5a30"/><path d="M5 12L16 5l11 7z" fill="#a2612f"/><rect x="7" y="19" width="18" height="9" rx="1.5" fill="#c9c9c6"/><path d="M7 23h18M12 19v4M20 19v4M16 23v5" stroke="#97979a" stroke-width="1"/><rect x="14.5" y="13" width="3" height="3.5" fill="#7a4a28"/></svg>';
 const BRIDGE_ICON = '<svg viewBox="0 0 32 32"><rect x="2" y="22" width="28" height="6" fill="#5d9bd0"/><path d="M3 18q13-8 26 0v3q-13-7-26 0z" fill="#a0703f"/><path d="M3 13q13-8 26 0" stroke="#8a5a32" stroke-width="1.5" fill="none"/><path d="M9 11v7M16 8.5v6M23 11v7" stroke="#8a5a32" stroke-width="1.5"/></svg>';
 const MONUMENT_ICON = '<svg viewBox="0 0 32 32"><rect x="6" y="25" width="20" height="3" fill="#a29f96"/><rect x="9" y="21" width="14" height="4" fill="#c9c9c6"/><path d="M13 21l1.5-15h3L19 21z" fill="#ddd8cc"/><path d="M14.5 6L16 3l1.5 3z" fill="#c9a227"/></svg>';
@@ -521,6 +521,7 @@ export class Hud {
       if (ref.workers[0]) p.push(`<p>${ref.workers[0].status}</p>`);
       if (def.consumes) p.push(`<p><em>Vorrat:</em> ${Object.entries(recipe(ref)).map(([k, n]) => `${ITEMS[k]} ${ref.inputs[k] || 0}/${outputCap(ref) * n}`).join(' · ')}</p>`);
       if (def.sheep) p.push(`<p><em>Schafe:</em> ${def.sheep[ref.level - 1]}${def.side ? ` · <em>Wolle am Hof:</em> ${ref.side.wool || 0}` : ''}</p>`);
+      if (ref.type === 'brewery') p.push('<p>Braut aus Getreide Bier fürs Wirtshaus. Braucht einen Brunnen in der Nähe.</p>');
       if (ref.type === 'weaver') p.push(`<p>Tuch wird im Winter zu warmer Kleidung: Wer versorgt ist, braucht nicht mehr Nahrung als sonst und ist zufriedener. Dafür braucht das Dorf je Winter ${WARMTH.perSettler} Tuch je Siedler.</p>`);
       if (def.trees) {
         const mine = game.fields.filter((f) => f.farm === ref);
@@ -556,7 +557,8 @@ export class Hud {
     }
     if (ref.type === 'tavern' && ref.done) {
       const open = ref.servedUntil > game.time;
-      p.push(`<p><em>Ausschank:</em> ${open ? `offen, noch ${Math.ceil(ref.servedUntil - game.time)} s` : 'geschlossen'} · <em>Brot:</em> ${ref.inputs.bread || 0}</p>`);
+      p.push(`<p><em>Ausschank:</em> ${open ? `offen, noch ${Math.ceil(ref.servedUntil - game.time)} s${ref.beerUntil > game.time ? ', mit Bier' : ''}` : 'geschlossen'} · <em>Bier:</em> ${ref.inputs.beer || 0} · <em>Brot:</em> ${ref.inputs.bread || 0}</p>`);
+      p.push('<p>Mit Bier aus der Brauerei sind die Siedler im Umkreis noch zufriedener.</p>');
       p.push(`<p>Der Wirt braucht 1 Brot je Ausschank. Solange offen, sind Wohnhäuser im Umkreis von ${def.radius} Feldern zufriedener.</p>`);
     }
     if ((ref.type === 'chapel' || ref.type === 'plaza') && ref.done) p.push(`<p>Wohnhäuser im Umkreis von ${def.radius} Feldern sind zufriedener.</p>`);

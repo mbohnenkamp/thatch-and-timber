@@ -2,7 +2,7 @@ import {
   SETTLER_SPEED, CARRY_AMOUNT, RESOURCES, BUILDINGS, ITEMS, MAX_BUILDERS_PER_SITE, FIELD_YIELD, ROAD, CART, NO_TOOL_JOBS, WARMTH, ORCHARD,
 } from '../config.js';
 import {
-  isSite, siteNeeds, siteBuildTime, siteCap, slots, outputItem, outputAmount, outputCap, recipe, hasInputs, useInputs, workSpeed,
+  isSite, siteNeeds, siteBuildTime, siteCap, slots, outputItem, outputAmount, outputCap, recipe, wants, hasInputs, useInputs, workSpeed,
 } from './buildings.js';
 
 const NAMES = [
@@ -447,6 +447,7 @@ const PROCESS = {
   smelter: { text: 'Schmilzt Eisen', sound: 'hammer' },
   market: { text: 'Handelt', sound: 'drop' },
   weaver: { text: 'Webt Tuch', sound: 'grind' },
+  brewery: { text: 'Braut Bier', sound: 'bake' },
 };
 
 // Wirt: holt Brot und schenkt aus; das Wirtshaus bleibt danach eine Weile offen
@@ -454,7 +455,7 @@ function planInnkeeper(game, s) {
   const b = s.workplace;
   const def = BUILDINGS[b.type];
   if (!hasInputs(b)) {
-    s.steps.push(go(b.x, b.z, true, b.servedUntil > game.time ? 'Schenkt den letzten Rest aus' : 'Wartet auf Brot'), { type: 'work', time: 3, rest: true, face: b });
+    s.steps.push(go(b.x, b.z, true, b.servedUntil > game.time ? 'Schenkt den letzten Rest aus' : 'Wartet auf Bier oder Brot'), { type: 'work', time: 3, rest: true, face: b });
     return;
   }
   s.steps.push(
@@ -463,18 +464,24 @@ function planInnkeeper(game, s) {
       type: 'call',
       fn: () => {
         if (b.removed || !hasInputs(b)) return;
+        const beer = 'beer' in recipe(b);
         useInputs(b);
         b.servedUntil = game.time + def.serveTime;
+        if (beer) b.beerUntil = b.servedUntil;
       },
     },
-    { type: 'work', time: def.workTime, face: b, status: 'Schenkt aus', sound: 'drop' },
+    { type: 'work', time: def.workTime, face: b, status: (b.inputs.beer || 0) >= 1 ? 'Schenkt Bier aus' : 'Schenkt aus', sound: 'drop' },
   );
 }
 
 const missing = (b) => Object.entries(recipe(b)).filter(([k, n]) => (b.inputs[k] || 0) < n).map(([k]) => ITEMS[k]).join(' und ');
 // Liegt alles für einen Arbeitsgang bereit oder im Lager?
-const inputsReachable = (game, b) => (!BUILDINGS[b.type].trade || b.trade)
-  && Object.keys(recipe(b)).every((k) => (b.inputs[k] || 0) > 0 || game.total(k) > 0);
+const inputsReachable = (game, b) => {
+  if (BUILDINGS[b.type].trade && !b.trade) return false;
+  const ok = (k) => (b.inputs[k] || 0) > 0 || game.total(k) > 0;
+  // Wirtshaus: Bier oder Brot reicht
+  return BUILDINGS[b.type].supplies ? Object.keys(wants(b)).some(ok) : Object.keys(recipe(b)).every(ok);
+};
 
 // Sägewerk und Werkzeugmacher pausieren, wenn genug auf Lager liegt
 const stockFull = (game, b) => {
@@ -692,7 +699,7 @@ function findSupply(game, s, cap, reach, warehouses) {
   let best = null, bd = Infinity;
   for (const b of game.buildings) {
     if (!b.done || b.removed || !reach(b) || stockFull(game, b)) continue;
-    for (const [item, need] of Object.entries(recipe(b))) {
+    for (const [item, need] of Object.entries(wants(b))) {
       const room = outputCap(b) * need - (b.inputs[item] || 0) - (b.inIncoming[item] || 0);
       if (room <= 0) continue;
       // Was für Baustellen zurückgelegt ist, wird nicht verarbeitet; der Markt lässt einen Rest im Lager
@@ -730,7 +737,7 @@ function deliverInput(game, s, { b, item, wh, amount }) {
         s.carry = null;
         b.inIncoming[item] -= amount;
         // Abgerissen oder am Markt inzwischen anderer Tausch: zurück ins Lager
-        if (b.removed || !(item in recipe(b))) game.store(b, item, amount);
+        if (b.removed || !(item in wants(b))) game.store(b, item, amount);
         else b.inputs[item] = (b.inputs[item] || 0) + amount;
         game.emit('sfx', { name: 'drop', x: s.x, z: s.z });
       },
