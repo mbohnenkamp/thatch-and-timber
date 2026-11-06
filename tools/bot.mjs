@@ -2,7 +2,7 @@
 // Wird vom Balancing-Test (Node) und im Browser für Probeläufe benutzt.
 import { BUILDINGS, SEASON_LENGTH } from '../src/config.js';
 import { isUnlocked, currentGoal } from '../src/goals.js';
-import { isSite, upgradeCost } from '../src/entities/buildings.js';
+import { isSite, upgradeCost, bridgeTiles } from '../src/entities/buildings.js';
 
 export function makeBot(g) {
   const of = (t) => g.buildings.filter((b) => b.type === t && !b.removed);
@@ -106,6 +106,62 @@ export function makeBot(g) {
     if (g.grid.wet && of('ditcher').length < Math.min(6, 1 + Math.floor(g.settlers.length / 15)) && !of('ditcher').some(isSite) && g.canAfford(BUILDINGS.ditcher.cost)) {
       const s = spot('ditcher');
       if (s) { g.place('ditcher', s.x, s.z); note('baut Grabenbauer'); return; }
+    }
+    // Inseln: Fähre zur nächsten noch nicht erreichten Insel, kürzeste Strecke zuerst
+    if (g.mapType === 'island' && g.settlers.length >= 15 && !of('ferry').some(isSite) && g.canAfford(BUILDINGS.ferry.cost)) {
+      const reached = new Set(g.buildings.filter((b) => !b.removed).map((b) => {
+        const t = b.span ? bridgeTiles(b.x, b.z, b.span).at(-1) : b;
+        return g.islandOf(t.x, t.z);
+      }));
+      let best = null;
+      for (let z = 1; z < g.size - 1; z++)
+        for (let x = 1; x < g.size - 1; x++) {
+          if (!g.inTerritory(x, z) || g.placeError('ferry', x, z)) continue;
+          const sp = g.bridgeSpan(x, z, 'ferry');
+          const id = g.islandOf(x + sp.dx * (sp.len + 1), z + sp.dz * (sp.len + 1));
+          if (id < 0 || reached.has(id) || (best && sp.len >= best.len)) continue;
+          best = { x, z, len: sp.len };
+        }
+      if (best) { g.place('ferry', best.x, best.z); note(`baut Fähre über ${best.len} Felder`); return; }
+      // Keine Fährstelle im Gebiet: Wachturm zu der Uferstelle, von der eine Fähre eine noch freie Insel erreicht
+      if (!of('tower').some(isSite) && g.canAfford(BUILDINGS.tower.cost) && towerOk()) {
+        const origins = [];
+        for (let z = 1; z < g.size - 1; z++)
+          for (let x = 1; x < g.size - 1; x++) {
+            if (g.grid.isWater(x, z) || g.inTerritory(x, z) || !reached.has(g.islandOf(x, z))) continue;
+            const sp = g.bridgeSpan(x, z, 'ferry');
+            const id = sp && g.islandOf(x + sp.dx * (sp.len + 1), z + sp.dz * (sp.len + 1));
+            if (sp && id >= 0 && !reached.has(id)) origins.push({ x, z });
+          }
+        let tw = null, td = Infinity;
+        if (origins.length)
+          for (let z = 1; z < g.size - 1; z++)
+            for (let x = 1; x < g.size - 1; x++) {
+              if (!g.inTerritory(x, z) || g.placeError('tower', x, z)) continue;
+              for (const o of origins) {
+                const d = Math.hypot(o.x - x, o.z - z);
+                if (d < td) { td = d; tw = { x, z }; }
+              }
+            }
+        if (tw) { g.place('tower', tw.x, tw.z); note('baut Wachturm Richtung Fährstelle'); return; }
+      }
+    }
+    // Hinter einer fertigen Fähre: Wachturm auf der neuen Insel, damit dort gebaut werden kann
+    if (g.mapType === 'island' && !of('tower').some(isSite) && g.canAfford(BUILDINGS.tower.cost)) {
+      const settled = new Set(g.buildings.filter((b) => !b.removed && !b.span).map((b) => g.islandOf(b.x, b.z)));
+      for (const f of of('ferry').filter((b) => b.done)) {
+        const end = bridgeTiles(f.x, f.z, f.span).at(-1), id = g.islandOf(end.x, end.z);
+        if (settled.has(id)) continue;
+        let best = null, bd = Infinity;
+        for (let dz = -6; dz <= 6; dz++)
+          for (let dx = -6; dx <= 6; dx++) {
+            const x = end.x + dx, z = end.z + dz;
+            if (g.islandOf(x, z) !== id || g.placeError('tower', x, z) || Math.hypot(dx, dz) >= bd) continue;
+            best = { x, z };
+            bd = Math.hypot(dx, dz);
+          }
+        if (best) { g.place('tower', best.x, best.z); note('baut Wachturm auf der neuen Insel'); return; }
+      }
     }
     // Kampagne: Kapitelziele verlangen Markt und viel Eisen
     const goalText = currentGoal(g)?.text || '';

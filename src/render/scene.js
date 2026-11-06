@@ -33,6 +33,7 @@ const TREE_VARIANTS = {
   mountains: ['custom/pine_a', 'custom/pine_b', 'custom/pine_c'],
   river: ['custom/tree_a', 'custom/tree_b', 'custom/tree_c'],
   pass: ['custom/pine_a', 'custom/pine_b', 'custom/pine_c', 'custom/pine_a', 'custom/tree_b'],
+  island: ['custom/tree_a', 'custom/tree_b', 'custom/tree_c', 'custom/pine_b'],
   swamp: ['custom/tree_a', 'custom/tree_b', 'custom/tree_c', 'custom/tree_b'],
 };
 // Grenzpfosten: heller Pfahl mit blauer Spitze
@@ -391,7 +392,7 @@ export class Renderer {
     if (this.roads) this.roads.dirty = true;
     let o;
     if (b.span) {
-      o = M.bridgeModel(this.grid, b);
+      o = (BUILDINGS[b.type].ferry ? M.ferryModel : M.bridgeModel)(this.grid, b);
       this.bridges.add(b);
     } else {
       o = b.done ? M.buildingModel(b.type, b.level, b.upgrading) : M.siteModel(b.type);
@@ -494,6 +495,13 @@ export class Renderer {
     for (const b of this.bridges) {
       if (!b.done) continue;
       const { dx, dz, len } = b.span, L = len + 1;
+      if (BUILDINGS[b.type].ferry) {
+        // Auf der Fähre sitzen die Siedler im Boot knapp über dem Wasser
+        const along = ((x - b.x - 0.5) * dx + (z - b.z - 0.5) * dz) / L;
+        const side = Math.abs((x - b.x - 0.5) * dz - (z - b.z - 0.5) * dx);
+        if (along > 0 && along < 1 && side < 0.6 && h < this.grid.waterLevel + 0.1) return this.grid.waterLevel + 0.08;
+        continue;
+      }
       const along = ((x - b.x - 0.5) * dx + (z - b.z - 0.5) * dz) / L;
       const side = Math.abs((x - b.x - 0.5) * dz - (z - b.z - 0.5) * dx);
       if (along > 0 && along < 1 && side < 0.6) return Math.max(h, M.deckHeight(this.grid, b, along));
@@ -525,13 +533,13 @@ export class Renderer {
 
   // Brückenvorschau folgt dem Ufer: neu bauen, wenn sich Lage oder Richtung ändern
   updateBridgeGhost(tile) {
-    const span = tile && this.game.bridgeSpan(tile.x, tile.z);
+    const span = tile && this.game.bridgeSpan(tile.x, tile.z, this.ghostType);
     const key = span ? `${tile.x},${tile.z},${span.dx},${span.dz}` : null;
     if (key === this.ghostKey) return;
     this.ghostKey = key;
     this.ghost.children.forEach((c) => M.disposeModel(c));
     this.ghost.clear();
-    if (span) this.ghost.add(M.bridgeGhost(this.grid, tile.x, tile.z, span));
+    if (span) this.ghost.add(M.bridgeGhost(this.grid, tile.x, tile.z, span, this.ghostType));
   }
 
   updateGhost(tile, ok) {
@@ -661,6 +669,11 @@ export class Renderer {
         if (s.carry) u.carry.material = M.mat(M.ITEM_COLORS[s.carry]);
       }
       M.animateSettler(o, s, this.time, dt);
+      // Fährstrecke: Siedler sitzt im Ruderboot
+      if (g.deck[g.idx(Math.floor(s.x), Math.floor(s.z))] === 2) {
+        if (!u.boat) { u.boat = M.rowBoat(); o.add(u.boat); }
+        u.boat.visible = true;
+      } else if (u.boat) u.boat.visible = false;
       // Fest: hüpfen und drehen
       if (s.dancing) {
         o.position.y += Math.abs(Math.sin(this.time * 7 + s.id)) * 0.12;

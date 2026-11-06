@@ -1,4 +1,4 @@
-export const VERSION = '7.1';
+export const VERSION = '7.2';
 export const ISSUES_URL = 'https://github.com/mbohnenkamp/thatch-and-timber/issues/new';
 
 // Kartengrößen in Feldern; alte Spielstände ohne Angabe sind 64
@@ -55,6 +55,8 @@ export const ROAD = {
   buildTime: 1.5,    // Sekunden Pflasterarbeit je Feld
 };
 // Sumpf (V7.1): nasse Felder sind begehbar (langsamer), aber nicht bebaubar. Trockengelegt ist der Boden fruchtbar.
+// Fähre: so viel teurer ist ein Wasserfeld auf dem Weg als ein Feld an Land
+export const FERRY_COST = 2.5;
 export const SWAMP = { drainTime: 8, fertile: 1.5, walkCost: 1.6, wetBelow: 1.6 };
 export const CART = { capacity: 6, speed: 4.2, perLevel: [0, 1, 2] };
 
@@ -242,9 +244,13 @@ export const BUILDINGS = {
   },
   // Sumpf (V7.1): legt nasse Felder im Umkreis trocken, vom Haus nach außen; nur auf Karten mit Sumpf
   ditcher: {
-    name: 'Grabenbauer', group: 'base', unlock: 0, swamp: true, cost: { wood: 5, stone: 1 }, buildTime: 10, job: 'Grabenbauer',
+    name: 'Grabenbauer', group: 'base', unlock: 0, onlyOn: 'swamp', cost: { wood: 5, stone: 1 }, buildTime: 10, job: 'Grabenbauer',
     drainRadius: [7, 9, 11],
     upgrades: [{ planks: 3, stone: 2 }, { planks: 6, stone: 4 }],
+  },
+  // Inseln (V7.2): Fährstelle mit Stegen an beiden Ufern; die Siedler rudern in kleinen Booten hinüber (langsamer als eine Brücke)
+  ferry: {
+    name: 'Fähre', group: 'base', unlock: 0, onlyOn: 'island', cost: { wood: 12, planks: 8 }, buildTime: 24, span: 18, ferry: true, territory: [6],
   },
 };
 
@@ -287,5 +293,12 @@ export const MAPS = {
     waterLevel: 1.0, forestThreshold: 0.55, treeDensity: 0.4,
     rockHeight: 99, rockDensity: 0, rockScatter: 0.002, berry: 0.04, fish: 0.35,
     grass: ['#6f8a45', '#52703a'], sky: '#c6d0c6',
+  },
+  island: {
+    name: 'Inseln', campaign: true,
+    desc: 'Eine große Insel und viele kleine im Meer. Erz und Kohle liegen auf den äußeren Inseln, hinüber geht es mit der Fähre.',
+    waterLevel: 1.0, forestThreshold: 0.5, treeDensity: 0.55,
+    rockHeight: 2.7, rockDensity: 0.15, rockScatter: 0.006, berry: 0.03, fish: 0.3,
+    grass: ['#79ad4a', '#5b9040'], sky: '#cfe3f0',
   },
 };

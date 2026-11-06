@@ -94,7 +94,7 @@ export function placeResources(grid, map, rng, fbm, start) {
   }
 
   // Erz und Kohle in Gruppen, am liebsten auf Anhöhen; Bergland viel und nah, Flussebene wenig und weit
-  const DEPOSITS = { mountains: [3, 12, 22], forest: [2, 14, 26], river: [1, 18, 30], pass: [5, 8, 28] }[map.key] || [1, 14, 26];
+  const DEPOSITS = { mountains: [3, 12, 22], forest: [2, 14, 26], river: [1, 18, 30], pass: [5, 8, 28], island: [3, 34, 50] }[map.key] || [1, 14, 26];
   const [groups, dMin, dMax] = DEPOSITS;
   for (const type of ['ore', 'coal'])
     for (let k = 0; k < groups; k++) {

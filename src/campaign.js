@@ -30,6 +30,19 @@ export const CHAPTERS = [
       { text: 'Kapitelziel: Wachse auf 120 Siedler', progress: (g) => [g.settlers.length, 120], reward: { wood: 50, stone: 50 }, rank: 4 },
     ],
   },
+  {
+    map: 'island', name: 'Inseln', suffix: ' an der See',
+    intro: 'Eine große Insel und viele kleine ringsum im Meer. Erz und Kohle gibt es nur auf den äußeren Inseln. Brücken reichen meist nicht hinüber, dafür baust du Fähren: Stege an beiden Ufern, die Siedler rudern in Booten über. Hinter der Fähre setzt ein Wachturm das Gebiet fort.',
+    goals: [
+      { text: 'Wachse auf 20 Siedler', progress: (g) => [g.settlers.length, 20], reward: { wood: 10, food: 10 }, rank: 0 },
+      { text: 'Baue eine Fähre', progress: (g) => [count(g, 'ferry'), 1], reward: { planks: 10 }, rank: 1 },
+      { text: 'Besiedle eine zweite Insel', progress: (g) => [g.settledIslands, 2], reward: { stone: 10, food: 10 }, rank: 1 },
+      { text: 'Wachse auf 60 Siedler', progress: (g) => [g.settlers.length, 60], reward: { wood: 20, stone: 20 }, rank: 2 },
+      { text: 'Besiedle 4 Inseln', progress: (g) => [g.settledIslands, 4], reward: { planks: 15, stone: 15 }, rank: 3 },
+      { text: 'Wachse auf 100 Siedler', progress: (g) => [g.settlers.length, 100], reward: { wood: 25, stone: 25 }, rank: 3 },
+      { text: 'Kapitelziel: Wachse auf 150 Siedler', progress: (g) => [g.settlers.length, 150], reward: { wood: 50, stone: 50 }, rank: 4 },
+    ],
+  },
 ];
 
 // Erbe der Mutterstadt: ein Zehntel des Lagers (gedeckelt) und mehr Siedler, je größer die Stadt
@@ -53,7 +66,7 @@ export function nextChapter(g) {
 }
 
 export const canSendOut = (g) => nextChapter(g) != null;
-// Ehrentafel abgeschlossen, aber das nächste Kapitel gibt es noch nicht
+// Kapitel geschafft und kein weiteres: die Kampagne ist zu Ende
 export const chapterPending = (g) => g.campaign?.doneAt != null && !CHAPTERS[g.campaign.chapter + 1];
 
 // Wappen: Schildfarbe, Zeichen und Zeichenfarbe aus dem Seed der Mutterstadt

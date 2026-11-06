@@ -22,9 +22,10 @@ const ROOF = { ditcher: '#7a5230', brewery: '#7a5230', beekeeper: '#c9a24a', orc
 const WALL = { ditcher: '#c9a77a', brewery: '#ece0c4', beekeeper: '#d8c49a', orchard: '#c9a77a', weaver: '#c9a77a', tavern: '#c9a77a', chapel: '#ece0c4', plaza: '#c9c9c6', monument: '#c9c9c6', townhall: '#ece0c4', oremine: '#c0714a', coalmine: '#a29f96', smelter: '#a29f96', market: '#e8c440', sawmill: '#c9a77a', toolmaker: '#a29f96', tower: '#c9c9c6', sheepfarm: '#c9a77a', well: '#c9c9c6', warehouse: '#ece0c4', builderhut: '#c9a77a', farm: '#e2d2a8', mill: '#ece0c4', bakery: '#ece0c4', woodcutter: '#c9a77a', quarry: '#a29f96', gatherer: '#d8c49a', fisher: '#b9a27e', house: '#ece0c4' };
 const WELL_ICON = '<svg viewBox="0 0 32 32"><rect x="8" y="10" width="2.5" height="12" fill="#9a5a30"/><rect x="21.5" y="10" width="2.5" height="12" fill="#9a5a30"/><path d="M5 12L16 5l11 7z" fill="#a2612f"/><rect x="7" y="19" width="18" height="9" rx="1.5" fill="#c9c9c6"/><path d="M7 23h18M12 19v4M20 19v4M16 23v5" stroke="#97979a" stroke-width="1"/><rect x="14.5" y="13" width="3" height="3.5" fill="#7a4a28"/></svg>';
 const BRIDGE_ICON = '<svg viewBox="0 0 32 32"><rect x="2" y="22" width="28" height="6" fill="#5d9bd0"/><path d="M3 18q13-8 26 0v3q-13-7-26 0z" fill="#a0703f"/><path d="M3 13q13-8 26 0" stroke="#8a5a32" stroke-width="1.5" fill="none"/><path d="M9 11v7M16 8.5v6M23 11v7" stroke="#8a5a32" stroke-width="1.5"/></svg>';
+const FERRY_ICON = '<svg viewBox="0 0 32 32"><rect x="2" y="20" width="28" height="9" fill="#5d9bd0"/><rect x="2" y="17" width="6" height="2.5" fill="#a0703f"/><rect x="24" y="17" width="6" height="2.5" fill="#a0703f"/><path d="M5 12q11 3 22 0" stroke="#d8c49a" stroke-width="1.2" fill="none"/><path d="M5 11v8M27 11v8" stroke="#5b3a1e" stroke-width="1.5"/><path d="M11 20h10l-2 3h-6z" fill="#7a4a28"/></svg>';
 const MONUMENT_ICON = '<svg viewBox="0 0 32 32"><rect x="6" y="25" width="20" height="3" fill="#a29f96"/><rect x="9" y="21" width="14" height="4" fill="#c9c9c6"/><path d="M13 21l1.5-15h3L19 21z" fill="#ddd8cc"/><path d="M14.5 6L16 3l1.5 3z" fill="#c9a227"/></svg>';
 const CASTLE_ICON = '<svg viewBox="0 0 32 32"><rect x="4" y="16" width="24" height="12" fill="#a29f96"/><path d="M4 16v-3h3v3h3v-3h3v3h6v-3h3v3h3v-3h3v3z" fill="#8f8a80"/><rect x="12" y="6" width="8" height="12" fill="#c9c9c6"/><path d="M12 6V4h2v2h1V4h2v2h1V4h2v2z" fill="#8f8a80"/><rect x="14" y="21" width="4" height="7" fill="#5b3a1e"/><path d="M16 2v4" stroke="#6e4423"/><path d="M16 2h5l-1.5 1.5L21 5h-5z" fill="#6a3f9a"/></svg>';
-const houseIcon = (t) => t === 'well' ? WELL_ICON : t === 'monument' ? MONUMENT_ICON : t === 'castle' ? CASTLE_ICON : t === 'bridge' ? BRIDGE_ICON :
+const houseIcon = (t) => t === 'well' ? WELL_ICON : t === 'monument' ? MONUMENT_ICON : t === 'castle' ? CASTLE_ICON : t === 'bridge' ? BRIDGE_ICON : t === 'ferry' ? FERRY_ICON :
   `<svg viewBox="0 0 32 32"><rect x="7" y="15" width="18" height="12" fill="${WALL[t]}"/><path d="M4 16L16 6l12 10z" fill="${ROOF[t]}"/><rect x="14" y="20" width="4" height="7" fill="#5b3a1e"/></svg>`;
 
 const minutes = (sec) => { const m = Math.round(sec / 60); return `${m} Minute${m === 1 ? '' : 'n'}`; };
@@ -281,7 +282,7 @@ export class Hud {
     this.hintFor = buildType;
     this.hint.hidden = !buildType;
     if (buildType === 'road') this.hint.textContent = 'Straße bauen: Startfeld antippen, dann Zielfeld. Weitere Ziele verlängern die Straße. Rechtsklick oder Esc beendet.';
-    else if (BUILDINGS[buildType]?.span) this.hint.textContent = `Brücke bauen: auf das Ufer direkt am Wasser tippen. Sie führt geradeaus zum Ufer gegenüber (höchstens ${BUILDINGS.bridge.span} Felder Wasser).`;
+    else if (BUILDINGS[buildType]?.span) this.hint.textContent = `${BUILDINGS[buildType].name} bauen: auf das Ufer direkt am Wasser tippen. Sie führt geradeaus zum Ufer gegenüber (höchstens ${BUILDINGS[buildType].span} Felder Wasser).`;
     else if (buildType) this.hint.textContent = `${BUILDINGS[buildType].name} platzieren: auf einen freien Platz tippen. Rechtsklick oder Esc bricht ab.`;
   }
 
@@ -295,7 +296,7 @@ export class Hud {
       chapter: game.campaign && {
         at: game.campaign.doneAt, rank: rankOf(game), label: 'Kapitel geschafft nach',
         title: `${game.townName} hat Kapitel ${game.campaign.chapter + 1} geschafft!`,
-        text: chapterPending(game) ? 'Das ist bisher das letzte Kapitel. Das nächste kommt mit einer späteren Version, bis dahin kannst du hier weiterbauen.'
+        text: chapterPending(game) ? `Das war das letzte Kapitel: Die Kampagne ist geschafft, von ${game.campaign.founder} bis ans Meer. Du kannst hier weiterbauen.`
           : 'Du kannst weiterbauen oder Siedler aussenden und das nächste Kapitel beginnen. Diese Stadt bleibt als Spielstand erhalten.',
       },
     }[kind];
@@ -415,7 +416,7 @@ export class Hud {
     } else {
       this.goalEl.querySelector('span').textContent = game.campaign ? `${chapter} geschafft!` : 'Alle Aufgaben erfüllt!';
       this.goalEl.querySelector('small').textContent = canSendOut(game) ? `Neue Siedlung gründen: „Siedler aussenden“ ${game.campaign ? 'im Lagerhaus' : 'in der Burg'}`
-        : chapterPending(game) ? 'Das nächste Kapitel kommt mit einer späteren Version.' : '';
+        : chapterPending(game) ? 'Die Kampagne ist geschafft.' : '';
       this.goalEl.querySelector('u').style.width = '100%';
     }
     const bar = this.el.querySelector('#topbar');
@@ -569,6 +570,7 @@ export class Hud {
         p.push(`<p><em>Obstbäume:</em> ${mine.length}/${def.trees[ref.level - 1]}, davon tragen: ${bearing}, reif: ${mine.filter((f) => f.state === 'ripe').length}</p>`);
         p.push('<p>Junge Bäume tragen ab dem zweiten Jahr, dann jeden Herbst. Bienen in der Nähe bringen mehr Obst.</p>');
       }
+      if (def.ferry) p.push(`<p>Die Siedler rudern in Booten über ${ref.span.len} Felder Wasser. Langsamer als eine Brücke, reicht aber viel weiter.</p>`);
       if (def.drainRadius) p.push(`<p>Legt Sumpf im Umkreis von ${def.drainRadius[ref.level - 1]} Feldern trocken. Danach kann man dort bauen, und Felder wachsen ${Math.round((SWAMP.fertile - 1) * 100)} % schneller. Trockengelegt insgesamt: ${game.drained} Felder.</p>`);
       if (def.beeRadius) p.push(`<p>Die Bienen bestäuben Felder und Obstbäume im Umkreis von ${def.beeRadius} Feldern: Getreide wächst schneller, Bäume tragen mehr. Im Winter ruhen sie.</p>`);
       if (def.fields) {

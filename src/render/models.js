@@ -582,8 +582,71 @@ function ghostify(g) {
   return g;
 }
 
-export function bridgeGhost(grid, x, z, span) {
-  return ghostify(bridgeModel(grid, { x, z, span, done: true }));
+export function bridgeGhost(grid, x, z, span, type = 'bridge') {
+  return ghostify((type === 'ferry' ? ferryModel : bridgeModel)(grid, { x, z, span, done: true }));
+}
+
+// Fährstelle: kurzer Steg an jedem Ufer, Seil dazwischen, an jedem Steg ein Boot
+export function ferryModel(grid, b) {
+  const g = new THREE.Group();
+  const { dx, dz, len } = b.span, L = len + 1;
+  const yaw = Math.atan2(dx, dz);
+  const wl = grid.waterLevel;
+  const at = (t) => [b.x + 0.5 + dx * L * t, b.z + 0.5 + dz * L * t];
+  const parts = [];
+  for (const end of [0, 1]) {
+    const dir = end ? -1 : 1;
+    const shore = grid.heightAt(...at(end));
+    const deckY = Math.max(wl + 0.18, shore - 0.05);
+    const pier = new THREE.Group();
+    for (let k = 0; k < 4; k++) {
+      const t = end + (dir * (k * 0.45 + 0.2)) / L;
+      const [x, z] = at(t);
+      const plank = box(0.8, 0.07, 0.42, k % 2 ? '#a0703f' : '#b07d48', x, deckY, z);
+      plank.rotation.y = yaw;
+      pier.add(plank);
+      if (k > 0) for (const side of [-0.36, 0.36]) pier.add(cyl(0.05, 0.06, deckY - wl + 0.7, 6, C.darkWood, x + dz * side, wl - 0.6, z - dx * side));
+    }
+    // Ruderboot längsseits am Steg
+    const [bx, bz] = at(end + (dir * 1.2) / L);
+    const boat = new THREE.Group();
+    boat.add(box(0.36, 0.14, 0.8, '#7a4a28', 0, 0, 0));
+    boat.add(box(0.28, 0.04, 0.12, '#a0703f', 0, 0.1, 0));
+    boat.position.set(bx + dz * 0.65, wl - 0.04, bz - dx * 0.65);
+    boat.rotation.y = yaw;
+    pier.add(boat);
+    g.add(pier);
+    parts.push(pier);
+  }
+  // Fährseil, leicht durchhängend, an Pfosten auf beiden Stegen
+  const [ax, az] = at(0.3 / L), [ex, ez] = at(1 - 0.3 / L);
+  const y = wl + 0.75;
+  for (const [px, pz] of [[ax, az], [ex, ez]]) g.add(cyl(0.05, 0.06, 0.95, 6, C.darkWood, px + dz * 0.45, wl - 0.1, pz - dx * 0.45));
+  const rope = mesh(new THREE.CylinderGeometry(0.015, 0.015, Math.hypot(ex - ax, ez - az), 4), '#d8c49a');
+  rope.rotation.order = 'YXZ';
+  rope.rotation.set(Math.PI / 2, yaw, 0);
+  rope.position.set((ax + ex) / 2 + dz * 0.45, y, (az + ez) / 2 - dx * 0.45);
+  g.add(rope);
+  parts.push(rope);
+  if (!b.done) {
+    const pile = logPile(0, 0);
+    pile.scale.setScalar(0.7);
+    const [lx, lz] = at(0);
+    pile.position.set(lx - dz * 0.45, grid.heightAt(lx, lz), lz + dx * 0.45);
+    g.add(pile);
+    g.userData.update = (site) => parts.forEach((m, k) => { m.visible = site.progress > [0.05, 0.5, 0.9][k]; });
+    g.userData.update(b);
+  }
+  return g;
+}
+
+// Kleines Ruderboot unter einem Siedler auf der Fährstrecke
+export function rowBoat() {
+  const g = new THREE.Group();
+  g.add(box(0.34, 0.12, 0.74, '#7a4a28', 0, -0.12, 0));
+  g.add(box(0.06, 0.03, 0.5, '#5b3a1e', 0.2, -0.02, 0));
+  g.visible = false;
+  return g;
 }
 
 

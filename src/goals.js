@@ -36,7 +36,7 @@ export const currentGoal = (g) => goalsOf(g)[g.goal] || null;
 export const rankIndex = (g) => (g.goal > 0 ? goalsOf(g)[g.goal - 1].rank : 0);
 export const rankOf = (g) => RANKS[rankIndex(g)];
 // Gebäude werden mit der Dorfstufe freigeschaltet; in der Kampagne ist alles bis zur Großstadt da, die Burg nicht
-export const isUnlocked = (g, type) => (!BUILDINGS[type].swamp || !!g.grid.wet) && (BUILDINGS[type].unlock || 0) <= (g.campaign ? CITY : rankIndex(g));
+export const isUnlocked = (g, type) => (!BUILDINGS[type].onlyOn || BUILDINGS[type].onlyOn === g.mapType) && (BUILDINGS[type].unlock || 0) <= (g.campaign ? CITY : rankIndex(g));
 export const unlockedAt = (rank) => Object.keys(BUILDINGS).filter((t) => BUILDINGS[t].unlock === rank);
 
 export function updateGoals(g, dt) {

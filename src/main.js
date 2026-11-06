@@ -248,7 +248,7 @@ function start(game, isNew = false) {
       }
       const err = t && game.placeError(buildType, t.x, t.z);
       renderer.updateGhost(t, t && !err);
-      if (BUILDINGS[buildType].span && t) hud.setHint(err || `Brücke über ${game.bridgeSpan(t.x, t.z).len} Felder Wasser — tippen zum Bauen`);
+      if (BUILDINGS[buildType].span && t) hud.setHint(err || `${BUILDINGS[buildType].name} über ${game.bridgeSpan(t.x, t.z, buildType).len} Felder Wasser — tippen zum Bauen`);
     },
     onTap: (x, y) => {
       audio.init();

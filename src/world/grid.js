@@ -1,4 +1,4 @@
-import { ROAD, SWAMP } from '../config.js';
+import { ROAD, SWAMP, FERRY_COST } from '../config.js';
 
 const DIRS = [
   [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
@@ -181,7 +181,7 @@ export class Grid {
         if (roadOnly && this.road[ni] !== 2) continue;
         if (dx && dz && (!ok(cx + dx, cz) || !ok(cx, cz + dz))) continue;
         if (closed[ni]) continue;
-        const wet = this.wet && this.wet[ni] === 1 && !this.road[ni] ? SWAMP.walkCost : 1;
+        const wet = this.deck[ni] === 2 ? FERRY_COST : this.wet && this.wet[ni] === 1 && !this.road[ni] ? SWAMP.walkCost : 1;
         const ng = g[cur] + cost * ROAD.cost[this.road[ni]] * wet + Math.abs(this.tileHeight(nx, nz) - ch) * 0.8;
         if (ng < g[ni]) {
           g[ni] = ng;

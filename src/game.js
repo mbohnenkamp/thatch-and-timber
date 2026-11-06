@@ -123,7 +123,7 @@ export class Game {
     const founder = mother.campaign?.founder || mother.townName;
     const g = Game.create(ch.map, seed, mother.size, heritage);
     g.campaign = {
-      chapter, founder, name: `${ch.prefix}${founder}`, crestSeed: mother.campaign ? mother.campaign.crestSeed : mother.seed,
+      chapter, founder, name: `${ch.prefix || ''}${founder}${ch.suffix || ''}`, crestSeed: mother.campaign ? mother.campaign.crestSeed : mother.seed,
       mother: mother.townName, heritage, doneAt: null,
     };
     return g;
@@ -444,6 +444,36 @@ export class Game {
     return best;
   }
 
+  // Inseln ohne Brücken und Fähren: Nummer der Landmasse je Feld (für „Besiedle Inseln“)
+  islandOf(x, z) {
+    const g = this.grid, N = this.size;
+    if (!this.islandMap) {
+      const m = (this.islandMap = new Int32Array(N * N).fill(-1));
+      let next = 0;
+      for (let i = 0; i < N * N; i++) {
+        if (m[i] >= 0 || g.water[i]) continue;
+        const stack = [i];
+        m[i] = next;
+        while (stack.length) {
+          const k = stack.pop(), kx = k % N, kz = (k / N) | 0;
+          for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = kx + dx, nz = kz + dz, n = nz * N + nx;
+            if (nx >= 0 && nz >= 0 && nx < N && nz < N && m[n] < 0 && !g.water[n]) { m[n] = next; stack.push(n); }
+          }
+        }
+        next++;
+      }
+    }
+    return this.islandMap[g.idx(x, z)];
+  }
+
+  // Wie viele Inseln (ab 30 Feldern) haben ein fertiges Gebäude, Brücken und Fähren nicht gezählt
+  get settledIslands() {
+    const ids = new Set();
+    for (const b of this.buildings) if (b.done && !b.removed && !b.span) ids.add(this.islandOf(b.x, b.z));
+    return ids.size;
+  }
+
   // Trockengelegter Sumpf ist fruchtbarer Boden
   fertility(f) { return this.grid.wet?.[this.grid.idx(f.x, f.z)] === 2 ? SWAMP.fertile : 1; }
 
@@ -519,8 +549,8 @@ export class Game {
   }
 
   // Kürzester gerader Weg vom Uferfeld (x, z) übers Wasser zum nächsten Land
-  bridgeSpan(x, z) {
-    const g = this.grid, max = BUILDINGS.bridge.span;
+  bridgeSpan(x, z, type = 'bridge') {
+    const g = this.grid, max = BUILDINGS[type].span;
     if (!g.inBounds(x, z) || g.isWater(x, z)) return null;
     let best = null;
     for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -539,7 +569,7 @@ export class Game {
     for (const t of bridgeTiles(b.x, b.z, b.span)) {
       const i = g.idx(t.x, t.z);
       g.bridge[i] = on ? b.id : -1;
-      g.deck[i] = on && b.done && g.water[i] ? 1 : 0;
+      g.deck[i] = on && b.done && g.water[i] ? (BUILDINGS[b.type].ferry ? 2 : 1) : 0;
     }
     g.land = null;
     this.territoryDirty = true;
@@ -566,7 +596,7 @@ export class Game {
     this.buildings.push(b);
     if (BUILDINGS[type].wide) this.clearAround(b);
     if (BUILDINGS[type].span) {
-      b.span = this.bridgeSpan(x, z);
+      b.span = this.bridgeSpan(x, z, type);
       this.markBridge(b, true);
     } else this.grid.building[this.grid.idx(x, z)] = b.id;
     if (done) this.territoryDirty = true;

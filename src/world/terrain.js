@@ -39,6 +39,15 @@ function heightFor(type, x, z, N, fbm, p) {
     h = h * (1 - flat) + (1.8 + fbm(u * 8, w * 8) * 0.5) * flat;
     return basins(h - lakes(0.004, 2.2));
   }
+  if (type === 'island') {
+    // Meer mit einer großen Insel in der Mitte und kleineren ringsum; Ufer mit Rauschen verzerrt
+    let land = 0;
+    for (const is of p.islands) {
+      const d = Math.hypot(x - is.x * N, z - is.z * N) * (0.9 + 0.2 * fbm(u * 4 + is.x * 30, w * 4 + is.z * 30, 3));
+      land = Math.max(land, smoothstep(is.r + 3, is.r - 3, d));
+    }
+    return 0.3 + land * (1.2 + fbm(u * 5, w * 5) * 1.6);
+  }
   if (type === 'swamp') {
     // Flache Niederung knapp über dem Wasser mit Tümpeln; trockene Horste ragen heraus, in der Mitte ein Hügel für den Start
     const horst = smoothstep(0.55, 0.64, fbm(u * 3 + 40, w * 3 + 40));
@@ -103,6 +112,16 @@ export function generateWorld(mapType, seed, N = 64) {
     lakes: [{ x: 0.5 + (rng() < 0.5 ? -1 : 1) * (0.14 + rng() * 0.06), z: 0.5 + (rng() - 0.5) * 0.3 }],
   };
   // Größere Karten bekommen weitere Seen, abseits der Mitte (Lage relativ zur Karte)
+  // Inseln: Lage und Größe in Feldern; Abstände so, dass meist nur die Fähre hinüberreicht
+  if (mapType === 'island') {
+    const a0 = rng() * Math.PI * 2, k = N / 128;
+    p.islands = [{ x: 0.5, z: 0.5, r: 21 * k }];
+    for (let i = 0; i < 5; i++) {
+      const a = a0 + (i * Math.PI * 2) / 5 + (rng() - 0.5) * 0.5;
+      const r = (10 + rng() * 4) * k, d = 0.33 + rng() * 0.04;
+      p.islands.push({ x: 0.5 + Math.cos(a) * d, z: 0.5 + Math.sin(a) * d, r });
+    }
+  }
   // Bergpass: Talverlauf und Seitentäler; der Teich liegt im Tal
   if (mapType === 'pass') {
     const ph = p.phase, amp = 0.13 + rng() * 0.06;
@@ -115,7 +134,7 @@ export function generateWorld(mapType, seed, N = 64) {
     const lx = 0.5 + (p.lakes[0].x > 0.5 ? 0.16 : -0.16);
     p.lakes[0] = { x: lx, z: p.valley(lx) };
   }
-  const extra = ['river', 'pass', 'swamp'].includes(mapType) ? 0 : Math.max(0, Math.round((N / 64) ** 2 * 0.75) - 1) + (mapType === 'mountains' && N > 64 ? 1 : 0);
+  const extra = ['river', 'pass', 'swamp', 'island'].includes(mapType) ? 0 : Math.max(0, Math.round((N / 64) ** 2 * 0.75) - 1) + (mapType === 'mountains' && N > 64 ? 1 : 0);
   for (let i = 0; i < extra; i++) {
     const a = rng() * Math.PI * 2, r = 0.16 + rng() * 0.16;
     p.lakes.push({ x: 0.5 + Math.cos(a) * r, z: 0.5 + Math.sin(a) * r, big: true });

@@ -1,4 +1,4 @@
-import { BUILDINGS, MAX_LEVEL, OUTPUT_CAP, ITEMS, TRADE_VALUE, TRADE_FEE, WORK_SPEED } from '../config.js';
+import { BUILDINGS, MAPS, MAX_LEVEL, OUTPUT_CAP, ITEMS, TRADE_VALUE, TRADE_FEE, WORK_SPEED } from '../config.js';
 import { RANKS, isUnlocked } from '../goals.js';
 import { happinessFactor } from '../happiness.js';
 
@@ -108,7 +108,7 @@ export const outputCap = (b) => OUTPUT_CAP[b.level - 1];
 export function placeError(game, type, x, z, free = false) {
   const g = game.grid;
   const def = BUILDINGS[type];
-  if (def.swamp && !g.wet) return `${def.name} gibt es nur auf Karten mit Sumpf`;
+  if (def.onlyOn && def.onlyOn !== game.mapType) return `${def.name} gibt es nur im Kapitel ${MAPS[def.onlyOn].name}`;
   if (!isUnlocked(game, type)) return `${def.name} gibt es ab der Stufe ${RANKS[def.unlock]}`;
   if (def.unique && game.buildings.some((b) => b.type === type && !b.removed)) return `Es gibt schon ${def.article || 'ein'} ${def.name}`;
   if (!g.inBounds(x, z)) return 'Außerhalb der Karte';
@@ -118,7 +118,7 @@ export function placeError(game, type, x, z, free = false) {
   if (!game.inTerritory(x, z)) return 'Außerhalb deines Gebiets — baue einen Wachturm am Rand';
   if (game.warehouses.length && !game.warehouses.some((w) => g.landId(w.x, w.z) === g.landId(x, z))) return 'Dorthin kommen deine Siedler nicht (Wasser dazwischen) — baue eine Brücke';
   if (def.span) {
-    const span = game.bridgeSpan(x, z);
+    const span = game.bridgeSpan(x, z, type);
     if (!span) return `Kein Ufer gegenüber in Reichweite (höchstens ${def.span} Felder Wasser)`;
     if (bridgeTiles(x, z, span).some((t) => g.building[g.idx(t.x, t.z)] >= 0 || g.bridge[g.idx(t.x, t.z)] >= 0)) return 'Hier steht schon etwas';
     return null;
