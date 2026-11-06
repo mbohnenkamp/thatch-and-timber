@@ -9,7 +9,7 @@ import {
 } from './entities/buildings.js';
 import { updateEconomy, updateWarmth } from './economy.js';
 import { updateHappiness } from './happiness.js';
-import { FEST_TIME, START, MAPS, BUILDINGS, WORK_RADIUS, ITEMS, GRAIN_GROW_TIME, FOOD_VALUE, ROAD, CART, ORCHARD, BEES } from './config.js';
+import { FEST_TIME, START, MAPS, SWAMP, BUILDINGS, WORK_RADIUS, ITEMS, GRAIN_GROW_TIME, FOOD_VALUE, ROAD, CART, ORCHARD, BEES } from './config.js';
 
 const ITEM_KEYS = Object.keys(ITEMS);
 const NAME_A = ['Eichen', 'Birken', 'Linden', 'Buchen', 'Tannen', 'Hasel', 'Erlen', 'Weiden', 'Mühl', 'Stein', 'Rosen', 'Falken', 'Hirsch', 'Kranich', 'Wolfs', 'Sonnen'];
@@ -43,6 +43,8 @@ export class Game {
     this.castleAt = null;
     this.campaign = null;
     this.traded = 0;
+    this.drained = 0;
+    this.draining = new Set();
     this.territoryStamp = 0;
     this.happiness = 50;
     this.warmth = 0;
@@ -435,11 +437,22 @@ export class Game {
         const d = Math.hypot(dx, dz);
         if (d > r + 0.5 || d >= bd || !g.walkable(x, z) || !this.inTerritory(x, z)) continue;
         const i = g.idx(x, z);
-        if (g.resource[i] >= 0 || g.field[i] >= 0 || g.road[i] > 0 || g.slope(x, z) > 0.6) continue;
+        if (g.resource[i] >= 0 || g.field[i] >= 0 || g.road[i] > 0 || g.slope(x, z) > 0.6 || g.wet?.[i] === 1) continue;
         best = { x, z };
         bd = d;
       }
     return best;
+  }
+
+  // Trockengelegter Sumpf ist fruchtbarer Boden
+  fertility(f) { return this.grid.wet?.[this.grid.idx(f.x, f.z)] === 2 ? SWAMP.fertile : 1; }
+
+  drain(x, z) {
+    const i = this.grid.idx(x, z);
+    if (this.grid.wet?.[i] !== 1) return;
+    this.grid.wet[i] = 2;
+    this.drained++;
+    this.emit('drain', { x, z });
   }
 
   // Besetzte Imkerei in Reichweite?
@@ -458,14 +471,14 @@ export class Game {
       if (f.farm.type === 'orchard') {
         // Obstbaum: wächst außer im Winter, trägt dann jeden Herbst einmal
         if (f.state === 'growing' && this.season.key !== 'winter') {
-          f.growth = Math.min(1, f.growth + (dt * boost) / ORCHARD.growTime);
+          f.growth = Math.min(1, f.growth + (dt * boost * this.fertility(f)) / ORCHARD.growTime);
           if (f.growth >= 1) f.state = 'mature';
         }
         if (f.state === 'mature' && this.season.key === 'autumn' && f.fruitYear !== this.season.year) f.state = 'ripe';
         continue;
       }
       if (f.state !== 'growing') continue;
-      f.growth = Math.min(1, f.growth + (dt * this.season.grain * boost * (MAPS[this.mapType].grain ?? 1)) / GRAIN_GROW_TIME);
+      f.growth = Math.min(1, f.growth + (dt * this.season.grain * boost * this.fertility(f) * (MAPS[this.mapType].grain ?? 1)) / GRAIN_GROW_TIME);
       if (f.growth >= 1) f.state = 'ripe';
     }
   }
@@ -758,6 +771,7 @@ export class Game {
       castleAt: this.castleAt,
       ...(this.campaign && { campaign: this.campaign }),
       ...(this.traded && { traded: Math.round(this.traded) }),
+      ...(this.grid.wet && { drained: [...this.grid.wet].flatMap((w, i) => (w === 2 ? [i] : [])) }),
       happiness: Math.round(this.happiness),
       warmth: this.warmth,
       clothGot: this.clothGot,
@@ -795,6 +809,7 @@ export class Game {
     g.castleAt = d.castleAt ?? null;
     g.campaign = d.campaign || null;
     g.traded = d.traded || 0;
+    if (g.grid.wet) for (const i of d.drained || []) { g.grid.wet[i] = 2; g.drained++; }
     g.happiness = d.happiness ?? 50;
     g.warmth = d.warmth || 0;
     g.clothGot = d.clothGot || 0;

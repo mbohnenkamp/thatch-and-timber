@@ -33,6 +33,7 @@ const TREE_VARIANTS = {
   mountains: ['custom/pine_a', 'custom/pine_b', 'custom/pine_c'],
   river: ['custom/tree_a', 'custom/tree_b', 'custom/tree_c'],
   pass: ['custom/pine_a', 'custom/pine_b', 'custom/pine_c', 'custom/pine_a', 'custom/tree_b'],
+  swamp: ['custom/tree_a', 'custom/tree_b', 'custom/tree_c', 'custom/tree_b'],
 };
 // Grenzpfosten: heller Pfahl mit blauer Spitze
 const BORDER_POST = (() => {
@@ -225,6 +226,7 @@ export class Renderer {
     this.signs = new TownSigns(this.scene, game);
     this.setTerritory(game.territory);
     game.on('territory', (t) => this.setTerritory(t));
+    game.on('drain', ({ x, z }) => this.terrain.userData.setWet(x, z, 2));
     game.on('goal', () => this.signs.refresh());
 
     this.raycaster = new THREE.Raycaster();

@@ -1,5 +1,5 @@
 import {
-  SETTLER_SPEED, CARRY_AMOUNT, RESOURCES, BUILDINGS, ITEMS, MAX_BUILDERS_PER_SITE, FIELD_YIELD, ROAD, CART, NO_TOOL_JOBS, WARMTH, ORCHARD,
+  SETTLER_SPEED, CARRY_AMOUNT, RESOURCES, BUILDINGS, ITEMS, MAX_BUILDERS_PER_SITE, FIELD_YIELD, ROAD, CART, NO_TOOL_JOBS, WARMTH, ORCHARD, SWAMP,
 } from '../config.js';
 import {
   isSite, siteNeeds, siteBuildTime, siteCap, slots, outputItem, outputAmount, outputCap, recipe, wants, hasInputs, useInputs, workSpeed,
@@ -148,6 +148,7 @@ function plan(game, s) {
     if (def.fields) planFarmer(game, s);
     else if (def.trees) planGardener(game, s);
     else if (def.hiveTime) planBeekeeper(game, s);
+    else if (def.drainRadius) planDitcher(game, s);
     else if (def.sheep) planShepherd(game, s);
     else if (def.serves) planInnkeeper(game, s);
     else if (!def.resource && (def.consumes || def.trade)) planProcessor(game, s);
@@ -314,6 +315,36 @@ function planBeekeeper(game, s) {
       },
     },
     { type: 'work', time: 1, rest: true, face: b, status: 'Legt ab' },
+  );
+}
+
+// --- Grabenbauer: legt das nächste nasse Feld im Umkreis trocken ---
+
+function planDitcher(game, s) {
+  const b = s.workplace;
+  const g = game.grid;
+  const r = BUILDINGS[b.type].drainRadius[b.level - 1];
+  let best = null, bd = Infinity;
+  for (let dz = -r; dz <= r; dz++)
+    for (let dx = -r; dx <= r; dx++) {
+      const x = b.x + dx, z = b.z + dz;
+      const d = Math.hypot(dx, dz);
+      if (d > r + 0.5 || d >= bd || !g.inBounds(x, z) || !game.inTerritory(x, z)) continue;
+      const i = g.idx(x, z);
+      if (g.wet?.[i] !== 1 || game.draining.has(i)) continue;
+      best = { x, z, i };
+      bd = d;
+    }
+  if (!best) {
+    s.steps.push(go(b.x, b.z, true, 'Kein Sumpf mehr in der Nähe'), { type: 'work', time: 6, rest: true, face: b });
+    return;
+  }
+  game.draining.add(best.i);
+  s.onAbort = () => game.draining.delete(best.i);
+  s.steps.push(
+    go(best.x, best.z, true, 'Geht zum Sumpf'),
+    { type: 'work', time: SWAMP.drainTime / workSpeed(game, b), face: best, status: 'Hebt einen Graben aus', sound: 'pick' },
+    { type: 'call', fn: () => { s.onAbort = null; game.draining.delete(best.i); game.drain(best.x, best.z); } },
   );
 }
 

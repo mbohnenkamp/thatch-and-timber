@@ -316,7 +316,13 @@ export function createTerrain(grid, map, sub = 2) {
   const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
   const c = (hex) => new THREE.Color(hex);
   // Eigenes Gebiet: 1 = innen; außen wird das Land leicht abgedunkelt
-  const area = new THREE.DataTexture(new Uint8Array(N * N * 4).fill(255), N, N);
+  // Rot = eigenes Gebiet, Grün = Sumpf, Blau = trockengelegt
+  const areaData = new Uint8Array(N * N * 4);
+  for (let i = 0; i < N * N; i++) {
+    areaData[i * 4] = areaData[i * 4 + 3] = 255;
+    if (grid.wet) areaData[i * 4 + (grid.wet[i] === 1 ? 1 : 2)] = grid.wet[i] ? 255 : 0;
+  }
+  const area = new THREE.DataTexture(areaData, N, N);
   area.magFilter = area.minFilter = THREE.LinearFilter;
   area.needsUpdate = true;
   const uniforms = {
@@ -331,6 +337,9 @@ export function createTerrain(grid, map, sub = 2) {
     uBed: { value: c('#8d8466') },
     uSnowColor: { value: c('#dfe4ea') },
     uDry: { value: c('#b8a04a') },
+    uMoor: { value: c('#56592f') },
+    uPuddle: { value: c('#5f7377') },
+    uRich: { value: c('#4d5a28') },
     ...terrainUniforms,
   };
   mat.onBeforeCompile = (shader) => {
@@ -346,7 +355,7 @@ export function createTerrain(grid, map, sub = 2) {
       varying vec3 vTNorm;
       uniform float uWater, uSnow, uAutumn, uSize;
       uniform sampler2D uArea;
-      uniform vec3 uGrassA, uGrassB, uDirt, uRock, uSand, uBed, uSnowColor, uDry;
+      uniform vec3 uGrassA, uGrassB, uDirt, uRock, uSand, uBed, uSnowColor, uDry, uMoor, uPuddle, uRich;
       ${GLSL_NOISE}
     ` + shader.fragmentShader.replace(
       '#include <color_fragment>',
@@ -362,6 +371,11 @@ export function createTerrain(grid, map, sub = 2) {
       col = mix(col, uDirt, dirt * 0.45);
       // Herbst: Wiese wird strohig
       col = mix(col, uDry, uAutumn * (0.35 + 0.25 * n2));
+      // Sumpf: dunkler Moorboden mit Pfützen; trockengelegt: satter, fruchtbarer Boden
+      vec4 ar = texture2D(uArea, p / uSize);
+      float moor = smoothstep(0.25, 0.75, ar.g);
+      col = mix(col, mix(uMoor * (0.85 + 0.3 * n3), uPuddle, smoothstep(0.62, 0.7, n2 * 0.7 + n3 * 0.3)), moor);
+      col = mix(col, uRich * (0.9 + 0.2 * n3), smoothstep(0.25, 0.75, ar.b) * 0.7);
       // Fels an steilen Hängen und hoch oben
       float rock = max(smoothstep(0.3, 0.36, slope + (n2 - 0.5) * 0.14), smoothstep(4.8, 5.1, vTPos.y + n2 * 0.5));
       col = mix(col, uRock * (0.85 + 0.3 * n3), rock);
@@ -380,6 +394,12 @@ export function createTerrain(grid, map, sub = 2) {
   };
   const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
+  mesh.userData.setWet = (x, z, w) => {
+    const i = (z * N + x) * 4;
+    area.image.data[i + 1] = w === 1 ? 255 : 0;
+    area.image.data[i + 2] = w === 2 ? 255 : 0;
+    area.needsUpdate = true;
+  };
   mesh.userData.setTerritory = (t) => {
     const d = area.image.data;
     for (let i = 0; i < t.length; i++) d[i * 4] = t[i] ? 255 : 0;

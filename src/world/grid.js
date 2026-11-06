@@ -1,4 +1,4 @@
-import { ROAD } from '../config.js';
+import { ROAD, SWAMP } from '../config.js';
 
 const DIRS = [
   [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
@@ -55,6 +55,7 @@ export class Grid {
     this.bridge = new Int32Array(size * size).fill(-1);   // Brücken-Id auf Brückenkopf und Wasserfeldern
     this.deck = new Uint8Array(size * size);              // fertige Brücke: Wasser ist begehbar
     this.waterLevel = 0;
+    this.wet = null;                                      // nur Sumpfkarten: 1 = nass, 2 = trockengelegt
   }
 
   idx(x, z) { return z * this.size + x; }
@@ -180,7 +181,8 @@ export class Grid {
         if (roadOnly && this.road[ni] !== 2) continue;
         if (dx && dz && (!ok(cx + dx, cz) || !ok(cx, cz + dz))) continue;
         if (closed[ni]) continue;
-        const ng = g[cur] + cost * ROAD.cost[this.road[ni]] + Math.abs(this.tileHeight(nx, nz) - ch) * 0.8;
+        const wet = this.wet && this.wet[ni] === 1 && !this.road[ni] ? SWAMP.walkCost : 1;
+        const ng = g[cur] + cost * ROAD.cost[this.road[ni]] * wet + Math.abs(this.tileHeight(nx, nz) - ch) * 0.8;
         if (ng < g[ni]) {
           g[ni] = ng;
           from[ni] = cur;

@@ -108,6 +108,7 @@ export const outputCap = (b) => OUTPUT_CAP[b.level - 1];
 export function placeError(game, type, x, z, free = false) {
   const g = game.grid;
   const def = BUILDINGS[type];
+  if (def.swamp && !g.wet) return `${def.name} gibt es nur auf Karten mit Sumpf`;
   if (!isUnlocked(game, type)) return `${def.name} gibt es ab der Stufe ${RANKS[def.unlock]}`;
   if (def.unique && game.buildings.some((b) => b.type === type && !b.removed)) return `Es gibt schon ${def.article || 'ein'} ${def.name}`;
   if (!g.inBounds(x, z)) return 'Außerhalb der Karte';
@@ -123,6 +124,7 @@ export function placeError(game, type, x, z, free = false) {
     return null;
   }
   if (g.bridge[g.idx(x, z)] >= 0) return 'Hier beginnt eine Brücke';
+  if (g.wet?.[g.idx(x, z)] === 1) return 'Hier ist Sumpf: ein Grabenbauer muss das Land erst trockenlegen';
   if (g.resource[g.idx(x, z)] >= 0 || g.field[g.idx(x, z)] >= 0) return 'Hier steht schon etwas';
   if (g.slope(x, z) > 0.6) return 'Zu steil zum Bauen';
   // Breites Gebäude (Burg): ringsum keine Felsen, Felder oder Wasser; Bäume werden beim Bau gefällt

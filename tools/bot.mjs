@@ -26,6 +26,12 @@ export function makeBot(g) {
           if (!n) continue;
           score += Math.min(n, 25) * 2;
         }
+        if (type === 'ditcher') {
+          let n = 0;
+          for (let dz = -7; dz <= 7; dz++) for (let dx = -7; dx <= 7; dx++) if (g.grid.wet[g.grid.idx(Math.min(g.size - 1, Math.max(0, x + dx)), Math.min(g.size - 1, Math.max(0, z + dz)))] === 1 && g.inTerritory(x + dx, z + dz)) n++;
+          if (n < 6) continue;
+          score += n * 0.6;
+        }
         if (type === 'farm') {
           let open = 0;
           for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (g.grid.walkable(x + dx, z + dz) && g.grid.resource[g.grid.idx(x + dx, z + dz)] < 0) open++;
@@ -86,10 +92,20 @@ export function makeBot(g) {
       if (m.trade?.get !== want) { g.setTrade(m, 'wood', want); note(`Markt tauscht Holz gegen ${{ stone: 'Stein', iron: 'Eisen', tools: 'Werkzeug' }[want]}`); }
     });
     if (openSites() >= 2) return;
+    // Die Burg geht vor, sobald sie erlaubt ist: die wenigen Plätze auf der Anhöhe sind sonst schnell verbaut
+    if (isUnlocked(g, 'castle') && !of('castle').length && g.canAfford(BUILDINGS.castle.cost)) {
+      const s = spot('castle');
+      if (s) { g.place('castle', s.x, s.z); note('baut Burg'); return; }
+    }
     // Werkzeug wird knapp und keine Schmelze läuft: Markt bauen
     if (g.total('tools') <= 3 && isUnlocked(g, 'market') && !of('market').length && !of('smelter').some((b) => b.done && b.workers.length) && g.canAfford(BUILDINGS.market.cost)) {
       const s = spot('market');
       if (s) { g.place('market', s.x, s.z); note('baut Markt (Werkzeug knapp)'); return; }
+    }
+    // Sumpf: Grabenbauer dort, wo im Gebiet am meisten nasses Land liegt; mehr, je größer das Dorf
+    if (g.grid.wet && of('ditcher').length < Math.min(6, 1 + Math.floor(g.settlers.length / 15)) && !of('ditcher').some(isSite) && g.canAfford(BUILDINGS.ditcher.cost)) {
+      const s = spot('ditcher');
+      if (s) { g.place('ditcher', s.x, s.z); note('baut Grabenbauer'); return; }
     }
     // Kampagne: Kapitelziele verlangen Markt und viel Eisen
     const goalText = currentGoal(g)?.text || '';

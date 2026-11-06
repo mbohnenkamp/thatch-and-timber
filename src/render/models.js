@@ -24,7 +24,7 @@ export const ITEM_COLORS = {
   wool: '#ece6d6', cloth: '#6a5a9a', honey: '#e0a82e', fruit: '#d0432f', beer: '#c98a2a',
 };
 export const JOB_COLORS = {
-  null: '#7a6a55', Träger: '#b5782f', Bauarbeiter: '#9b3b2a', Bauer: '#6b8f3a', Müller: '#d8d2c4', Bäcker: '#f0ebe0', Holzfäller: '#3f7d3a', Steinmetz: '#6f7378', Sammler: '#a8467a', Fischer: '#2f69b0', Säger: '#9a6a3a', Werkzeugmacher: '#4f4a46', Schäfer: '#7a8a4a', Bergmann: '#5a5048', Schmelzer: '#7a3a2a', Händler: '#3f6fb0', Weber: '#6a5a9a', Imker: '#d9a62e', Gärtner: '#4f8a3a', Brauer: '#a8743a',
+  null: '#7a6a55', Grabenbauer: '#5d6b3a', Träger: '#b5782f', Bauarbeiter: '#9b3b2a', Bauer: '#6b8f3a', Müller: '#d8d2c4', Bäcker: '#f0ebe0', Holzfäller: '#3f7d3a', Steinmetz: '#6f7378', Sammler: '#a8467a', Fischer: '#2f69b0', Säger: '#9a6a3a', Werkzeugmacher: '#4f4a46', Schäfer: '#7a8a4a', Bergmann: '#5a5048', Schmelzer: '#7a3a2a', Händler: '#3f6fb0', Weber: '#6a5a9a', Imker: '#d9a62e', Gärtner: '#4f8a3a', Brauer: '#a8743a',
 };
 const HAT_COLORS = {
   null: '#c9a24a', Träger: '#6b4a1e', Bauarbeiter: '#e8c440', Bauer: '#e8d27a', Müller: '#ffffff', Bäcker: '#ffffff', Holzfäller: '#2c5a28', Steinmetz: '#4a4d52', Sammler: '#d8c070', Fischer: '#e0d4b0', Säger: '#c9a77a', Werkzeugmacher: '#2e2a28', Schäfer: '#c9b27a', Bergmann: '#e8c440', Schmelzer: '#3a3634', Händler: '#a0703f',

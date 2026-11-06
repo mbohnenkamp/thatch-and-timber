@@ -18,6 +18,18 @@ export const CHAPTERS = [
       { text: 'Kapitelziel: Wachse auf 80 Siedler', progress: (g) => [g.settlers.length, 80], reward: { wood: 50, stone: 50 }, rank: 4 },
     ],
   },
+  {
+    map: 'swamp', name: 'Sumpf', prefix: 'Klein-',
+    intro: 'Eine nasse Niederung voller Tümpel. Auf Sumpf kann man weder bauen noch Felder anlegen, und die Siedler kommen dort nur langsam voran. Ein Grabenbauer legt das Land trocken, danach ist der Boden besonders fruchtbar. Stein ist knapp.',
+    goals: [
+      { text: 'Baue einen Grabenbauer', progress: (g) => [count(g, 'ditcher'), 1], reward: { wood: 10, planks: 5 }, rank: 0 },
+      { text: 'Lege 40 Felder Sumpf trocken', progress: (g) => [g.drained, 40], reward: { stone: 10, food: 10 }, rank: 1 },
+      { text: 'Wachse auf 30 Siedler', progress: (g) => [g.settlers.length, 30], reward: { wood: 15, stone: 10 }, rank: 1 },
+      { text: 'Lege 250 Felder Sumpf trocken', progress: (g) => [g.drained, 250], reward: { stone: 15, planks: 10 }, rank: 2 },
+      { text: 'Wachse auf 80 Siedler', progress: (g) => [g.settlers.length, 80], reward: { wood: 25, stone: 25 }, rank: 3 },
+      { text: 'Kapitelziel: Wachse auf 120 Siedler', progress: (g) => [g.settlers.length, 120], reward: { wood: 50, stone: 50 }, rank: 4 },
+    ],
+  },
 ];
 
 // Erbe der Mutterstadt: ein Zehntel des Lagers (gedeckelt) und mehr Siedler, je größer die Stadt

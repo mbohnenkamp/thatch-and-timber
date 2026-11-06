@@ -1,4 +1,4 @@
-export const VERSION = '7.0';
+export const VERSION = '7.1';
 export const ISSUES_URL = 'https://github.com/mbohnenkamp/thatch-and-timber/issues/new';
 
 // Kartengrößen in Feldern; alte Spielstände ohne Angabe sind 64
@@ -54,6 +54,8 @@ export const ROAD = {
   buildCost: 1,      // Stein je selbst gebautem Straßenfeld
   buildTime: 1.5,    // Sekunden Pflasterarbeit je Feld
 };
+// Sumpf (V7.1): nasse Felder sind begehbar (langsamer), aber nicht bebaubar. Trockengelegt ist der Boden fruchtbar.
+export const SWAMP = { drainTime: 8, fertile: 1.5, walkCost: 1.6, wetBelow: 1.6 };
 export const CART = { capacity: 6, speed: 4.2, perLevel: [0, 1, 2] };
 
 // Neue Waren immer ans Ende, sonst verrutschen alte Spielstände
@@ -238,6 +240,12 @@ export const BUILDINGS = {
   bridge: {
     name: 'Brücke', group: 'base', unlock: 0, cost: { wood: 8, stone: 4 }, buildTime: 16, span: 8, territory: [5],
   },
+  // Sumpf (V7.1): legt nasse Felder im Umkreis trocken, vom Haus nach außen; nur auf Karten mit Sumpf
+  ditcher: {
+    name: 'Grabenbauer', group: 'base', unlock: 0, swamp: true, cost: { wood: 5, stone: 1 }, buildTime: 10, job: 'Grabenbauer',
+    drainRadius: [7, 9, 11],
+    upgrades: [{ planks: 3, stone: 2 }, { planks: 6, stone: 4 }],
+  },
 };
 
 // Bauleiste: Gruppen in dieser Reihenfolge
@@ -272,5 +280,12 @@ export const MAPS = {
     waterLevel: 0.9, forestThreshold: 0.5, treeDensity: 0.45,
     rockHeight: 4.2, rockDensity: 0.22, rockScatter: 0.01, berry: 0.012, fish: 0.3,
     grass: ['#7d9a4d', '#5b7a3c'], sky: '#c3d2e0',
+  },
+  swamp: {
+    name: 'Sumpf', campaign: true,
+    desc: 'Eine nasse Niederung voller Tümpel. Erst trockengelegt lässt sich bauen, dann ist der Boden fruchtbar.',
+    waterLevel: 1.0, forestThreshold: 0.55, treeDensity: 0.4,
+    rockHeight: 99, rockDensity: 0, rockScatter: 0.002, berry: 0.04, fish: 0.35,
+    grass: ['#6f8a45', '#52703a'], sky: '#c6d0c6',
   },
 };

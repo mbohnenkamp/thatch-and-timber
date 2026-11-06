@@ -1,7 +1,7 @@
 import { Grid } from './grid.js';
 import { mulberry32, makeNoise } from './noise.js';
 import { placeResources } from './resources.js';
-import { MAPS } from '../config.js';
+import { MAPS, SWAMP } from '../config.js';
 
 const smoothstep = (a, b, t) => {
   const x = Math.min(1, Math.max(0, (t - a) / (b - a)));
@@ -39,6 +39,13 @@ function heightFor(type, x, z, N, fbm, p) {
     h = h * (1 - flat) + (1.8 + fbm(u * 8, w * 8) * 0.5) * flat;
     return basins(h - lakes(0.004, 2.2));
   }
+  if (type === 'swamp') {
+    // Flache Niederung knapp über dem Wasser mit Tümpeln; trockene Horste ragen heraus, in der Mitte ein Hügel für den Start
+    const horst = smoothstep(0.55, 0.64, fbm(u * 3 + 40, w * 3 + 40));
+    const home = Math.exp(-((x - N / 2) ** 2 + (z - N / 2) ** 2) / 98);
+    const ponds = smoothstep(0.6, 0.68, fbm(u * 6 + 70, w * 6 + 70)) * 0.65;
+    return 1.2 + fbm(u * 5, w * 5) * 0.35 + Math.max(horst, home) * 0.75 - ponds * (1 - home);
+  }
   if (type === 'pass') {
     // Gewundenes Tal quer über die Karte mit zwei kurzen Seitentälern, dazwischen hohe Grate
     const dist = Math.min(Math.abs(nz - p.valley(nx)) * N, ...p.side.map((sv) => segDist(x, z, sv)));
@@ -66,7 +73,7 @@ function isGoodStart(grid, x, z) {
   for (let dz = -2; dz <= 2; dz++)
     for (let dx = -2; dx <= 2; dx++) {
       const tx = x + dx, tz = z + dz;
-      if (!grid.inBounds(tx, tz) || grid.isWater(tx, tz) || grid.slope(tx, tz) > 0.5) return false;
+      if (!grid.inBounds(tx, tz) || grid.isWater(tx, tz) || grid.slope(tx, tz) > 0.5 || grid.wet?.[grid.idx(tx, tz)]) return false;
     }
   return true;
 }
@@ -108,7 +115,7 @@ export function generateWorld(mapType, seed, N = 64) {
     const lx = 0.5 + (p.lakes[0].x > 0.5 ? 0.16 : -0.16);
     p.lakes[0] = { x: lx, z: p.valley(lx) };
   }
-  const extra = mapType === 'river' || mapType === 'pass' ? 0 : Math.max(0, Math.round((N / 64) ** 2 * 0.75) - 1) + (mapType === 'mountains' && N > 64 ? 1 : 0);
+  const extra = ['river', 'pass', 'swamp'].includes(mapType) ? 0 : Math.max(0, Math.round((N / 64) ** 2 * 0.75) - 1) + (mapType === 'mountains' && N > 64 ? 1 : 0);
   for (let i = 0; i < extra; i++) {
     const a = rng() * Math.PI * 2, r = 0.16 + rng() * 0.16;
     p.lakes.push({ x: 0.5 + Math.cos(a) * r, z: 0.5 + Math.sin(a) * r, big: true });
@@ -122,6 +129,12 @@ export function generateWorld(mapType, seed, N = 64) {
     for (let x = 0; x < N; x++)
       grid.water[grid.idx(x, z)] = grid.tileHeight(x, z) < grid.waterLevel ? 1 : 0;
 
+  if (mapType === 'swamp') {
+    grid.wet = new Uint8Array(N * N);
+    for (let z = 0; z < N; z++)
+      for (let x = 0; x < N; x++)
+        if (!grid.water[grid.idx(x, z)] && grid.tileHeight(x, z) < SWAMP.wetBelow) grid.wet[grid.idx(x, z)] = 1;
+  }
   const start = findStart(grid, p.valley ? Math.round(p.valley(0.5) * N) : N >> 1);
   const resources = placeResources(grid, { ...map, key: mapType }, rng, fbm, start, N);
   return { grid, resources, start };
