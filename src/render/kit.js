@@ -158,6 +158,10 @@ export function kitBuilding(type, level) {
     case 'sheepfarm':
       inner = house({ floors: [wood], door: 'wall-wood-door', window: 'wall-wood-window-shutters', roof: 'roof-gable', roofColor: 'thatch' });
       break;
+    case 'weaver':
+      inner = house({ floors: [stone, wood], door: 'wall-wood-door', window: 'wall-wood-window-shutters', roof: 'roof-gable', roofColor: 'red' });
+      extras.push(part('stall-red', 0.8, 0, 0.35, Math.PI / 2, 0.45));
+      break;
     case 'farm':
       inner = house({ width: 2, floors: [wood], door: 'wall-wood-door', window: 'wall-wood-window-shutters', roof: 'roof-gable', roofColor: 'thatch' });
       break;

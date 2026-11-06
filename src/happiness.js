@@ -1,4 +1,4 @@
-import { BUILDINGS, HAPPINESS } from './config.js';
+import { BUILDINGS, HAPPINESS, WARMTH } from './config.js';
 
 // Zufriedenheit 0..100: Grundstimmung plus Essen, Versorgung der Wohnhäuser durch Brunnen,
 // Wirtshaus, Kapelle und Marktplatz; Hunger und Enge ziehen ab.
@@ -23,6 +23,7 @@ export function happinessParts(g) {
     const share = coverage(g, type, houses);
     parts.push([`${BUILDINGS[type].name} (${Math.round(share * 100)} % der Häuser)`, Math.round(share * max)]);
   }
+  if (g.season.key === 'winter') parts.push(['Warme Kleidung im Winter', Math.round((g.warmth || 0) * WARMTH.mood)]);
   if (g.hungry) parts.push(['Hunger', -HAPPINESS.hunger]);
   if (g.settlers.length >= g.housing) parts.push(['Alle Wohnungen voll', -HAPPINESS.crowded]);
   return parts;

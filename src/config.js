@@ -28,6 +28,8 @@ export const MAX_BUILDERS_PER_SITE = 3;
 export const GRAIN_GROW_TIME = 70;
 export const FIELD_YIELD = 2;
 export const BREAD_FOOD = 3;
+// Nahrungspunkte je Stück; gegessen wird in dieser Reihenfolge
+export const FOOD_VALUE = { food: 1, bread: BREAD_FOOD };
 
 // Jahreszeiten: Dauer je Jahreszeit (2 Spieltage) und Auswirkungen
 export const SEASON_LENGTH = 1200;
@@ -49,7 +51,8 @@ export const ROAD = {
 };
 export const CART = { capacity: 6, speed: 4.2, perLevel: [0, 1, 2] };
 
-export const ITEMS = { wood: 'Holz', stone: 'Stein', food: 'Nahrung', grain: 'Getreide', flour: 'Mehl', bread: 'Brot', planks: 'Bretter', tools: 'Werkzeug', ore: 'Erz', coal: 'Kohle', iron: 'Eisen' };
+// Neue Waren immer ans Ende, sonst verrutschen alte Spielstände
+export const ITEMS = { wood: 'Holz', stone: 'Stein', food: 'Nahrung', grain: 'Getreide', flour: 'Mehl', bread: 'Brot', planks: 'Bretter', tools: 'Werkzeug', ore: 'Erz', coal: 'Kohle', iron: 'Eisen', wool: 'Wolle', cloth: 'Tuch', honey: 'Honig', fruit: 'Obst', beer: 'Bier' };
 // Berufe ohne Werkzeug
 export const NO_TOOL_JOBS = ['Träger', 'Bauarbeiter', 'Werkzeugmacher', 'Bergmann', 'Schmelzer', 'Händler', 'Wirt'];
 
@@ -58,11 +61,14 @@ export const HAPPINESS = {
   base: 50, perFood: 5, hunger: 30, crowded: 5, effect: 0.15,
   cover: { well: 10, tavern: 15, chapel: 10, plaza: 10 },
 };
+// Winter: je Siedler so viel Tuch für warme Kleidung. Versorgte brauchen keine zusätzliche Nahrung
+// (SEASONS.winter.hunger) und sind zufriedener (bis mood Punkte)
+export const WARMTH = { perSettler: 0.5, mood: 10 };
 // Fest beim Aufstieg: so viele Spielsekunden tanzen alle
 export const FEST_TIME = 20;
 
 // Tauschwert am Markt; der Händler nimmt die Hälfte als Aufschlag
-export const TRADE_VALUE = { wood: 1, stone: 2, food: 1, grain: 1, flour: 2, bread: 3, planks: 2, tools: 8, ore: 2, coal: 2, iron: 4 };
+export const TRADE_VALUE = { wood: 1, stone: 2, food: 1, grain: 1, flour: 2, bread: 3, planks: 2, tools: 8, ore: 2, coal: 2, iron: 4, wool: 2, cloth: 5, honey: 3, fruit: 2, beer: 4 };
 export const TRADE_FEE = 1.5;
 
 export const RESOURCES = {
@@ -136,6 +142,14 @@ export const BUILDINGS = {
   sheepfarm: {
     name: 'Schäferei', group: 'food', unlock: 0, cost: { wood: 6, stone: 2 }, buildTime: 12, job: 'Schäfer', produces: 'food',
     sheep: [4, 6, 8], milkTime: 7, herdRadius: 3,
+    // Bei jeder woolEvery-ten Runde schert der Schäfer auch; Wolle wartet am Hof auf die Träger (höchstens woolCap)
+    side: 'wool', woolEvery: 3, woolCap: 8,
+    upgrades: [{ planks: 3, stone: 4 }, { planks: 6, stone: 6 }],
+  },
+  // Wolle aus der Schäferei wird zu Tuch, das im Winter warm hält
+  weaver: {
+    name: 'Weberei', group: 'craft', unlock: 1, cost: { wood: 6, stone: 2, planks: 2 }, buildTime: 14, job: 'Weber',
+    consumes: { wool: 1 }, produces: 'cloth', workTime: 10, stockLimit: 30,
     upgrades: [{ planks: 3, stone: 4 }, { planks: 6, stone: 6 }],
   },
   farm: {

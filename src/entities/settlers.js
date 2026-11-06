@@ -1,5 +1,5 @@
 import {
-  SETTLER_SPEED, CARRY_AMOUNT, RESOURCES, BUILDINGS, ITEMS, MAX_BUILDERS_PER_SITE, FIELD_YIELD, ROAD, CART, NO_TOOL_JOBS,
+  SETTLER_SPEED, CARRY_AMOUNT, RESOURCES, BUILDINGS, ITEMS, MAX_BUILDERS_PER_SITE, FIELD_YIELD, ROAD, CART, NO_TOOL_JOBS, WARMTH,
 } from '../config.js';
 import {
   isSite, siteNeeds, siteBuildTime, siteCap, slots, outputItem, outputAmount, outputCap, recipe, hasInputs, useInputs, workSpeed,
@@ -262,6 +262,9 @@ function planShepherd(game, s) {
         s.milkAt = null;
         s.onAbort = null;
         s.carry = 'food';
+        // Jede woolEvery-te Runde fällt auch Wolle an, sie bleibt am Hof für die Träger
+        b.rounds = (b.rounds || 0) + 1;
+        if (def.side && b.rounds % def.woolEvery === 0 && (b.side.wool || 0) < def.woolCap) b.side.wool = (b.side.wool || 0) + 1;
       },
     },
     go(b.x, b.z, true, 'Bringt Milch zur Hütte'),
@@ -346,6 +349,7 @@ const PROCESS = {
   toolmaker: { text: 'Schmiedet Werkzeug', sound: 'hammer' },
   smelter: { text: 'Schmilzt Eisen', sound: 'hammer' },
   market: { text: 'Handelt', sound: 'drop' },
+  weaver: { text: 'Webt Tuch', sound: 'grind' },
 };
 
 // Wirt: holt Brot und schenkt aus; das Wirtshaus bleibt danach eine Weile offen
@@ -377,7 +381,8 @@ const inputsReachable = (game, b) => (!BUILDINGS[b.type].trade || b.trade)
 
 // Sägewerk und Werkzeugmacher pausieren, wenn genug auf Lager liegt
 const stockFull = (game, b) => {
-  const limit = BUILDINGS[b.type].stockLimit;
+  // Die Weberei webt, bis der nächste Winter gedeckt ist
+  const limit = b.type === 'weaver' ? Math.max(BUILDINGS.weaver.stockLimit, Math.ceil(game.settlers.length * WARMTH.perSettler) + 10) : BUILDINGS[b.type].stockLimit;
   return limit && game.total(outputItem(b)) + b.output >= limit;
 };
 
@@ -461,6 +466,13 @@ function planTransport(game, s, cap, reach, reachWarehouse) {
   const supply = findSupply(game, s, cap, reach, warehouses);
   if (supply) return deliverInput(game, s, supply), true;
 
+  // Nebenprodukte (Wolle) ab 2 Stück abholen
+  for (const b of game.buildings) {
+    if (!b.done || b.removed || !reach(b)) continue;
+    const item = Object.keys(b.side).find((k) => sideFree(b, k) >= 2);
+    if (item) return collectSide(game, s, b, item, cap, warehouses), true;
+  }
+
   const hut = nearest(s, huts);
   if (hut) return collect(game, s, hut, cap, warehouses), true;
   return false;
@@ -491,6 +503,46 @@ function collect(game, s, hut, cap, warehouses) {
         hut.outReserved -= amount;
         got = Math.min(amount, hut.output);
         hut.output -= got;
+        if (!got || hut.removed) {
+          s.onAbort = null;
+          s.steps = [];
+          return;
+        }
+        s.carry = item;
+        s.carryAmount = got;
+        s.onAbort = () => game.store(s, item, got);
+      },
+    },
+    go(wh.x, wh.z, true, `Bringt ${ITEMS[item]} ins Lager`),
+    {
+      type: 'call',
+      fn: () => {
+        s.onAbort = null;
+        s.carry = null;
+        game.store(wh, item, got);
+        game.emit('sfx', { name: 'drop', x: s.x, z: s.z });
+      },
+    },
+  );
+}
+
+const sideFree = (b, item) => (b.side[item] || 0) - (b.sideReserved[item] || 0);
+
+function collectSide(game, s, hut, item, cap, warehouses) {
+  const amount = Math.min(cap, sideFree(hut, item));
+  const wh = nearest(hut, warehouses);
+  let got = 0;
+  hut.sideReserved[item] = (hut.sideReserved[item] || 0) + amount;
+  s.onAbort = () => { hut.sideReserved[item] -= amount; };
+  s.steps.push(
+    go(hut.x, hut.z, true, `Holt ${ITEMS[item]} ab`),
+    { type: 'work', time: 0.6, rest: true, face: hut },
+    {
+      type: 'call',
+      fn: () => {
+        hut.sideReserved[item] -= amount;
+        got = Math.min(amount, hut.side[item] || 0);
+        hut.side[item] = (hut.side[item] || 0) - got;
         if (!got || hut.removed) {
           s.onAbort = null;
           s.steps = [];

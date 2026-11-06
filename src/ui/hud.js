@@ -1,4 +1,4 @@
-import { SEASON_LENGTH, BUILD_GROUPS, TRADE_VALUE, NO_TOOL_JOBS, MAP_SIZES, DEFAULT_MAP_SIZE, BUILDINGS, ITEMS, MAPS, RESOURCES, MAX_LEVEL, WORK_RADIUS, BREAD_FOOD, ROAD, CART, VERSION, ISSUES_URL } from '../config.js';
+import { SEASON_LENGTH, BUILD_GROUPS, TRADE_VALUE, NO_TOOL_JOBS, MAP_SIZES, DEFAULT_MAP_SIZE, BUILDINGS, ITEMS, MAPS, RESOURCES, MAX_LEVEL, WORK_RADIUS, FOOD_VALUE, WARMTH, ROAD, CART, VERSION, ISSUES_URL } from '../config.js';
 
 const ROAD_ICON = '<svg viewBox="0 0 32 32"><path d="M6 28L13 4h6l7 24z" fill="#9b9384"/><path d="M15.2 8h1.6l.4 4h-2.4zM14.6 16h2.8l.5 5h-3.8z" fill="#efe6d2"/></svg>';
 import { currentGoal, rankOf, isUnlocked, RANKS } from '../goals.js';
@@ -12,12 +12,13 @@ const ICONS = {
   planks: '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="4" rx="1" fill="#d9b07a"/><rect x="3" y="11" width="18" height="4" rx="1" fill="#c79a62"/><rect x="3" y="16" width="18" height="4" rx="1" fill="#d9b07a"/></svg>',
   tools: '<svg viewBox="0 0 24 24"><path d="M5 19l9-9" stroke="#8a5a32" stroke-width="3" stroke-linecap="round"/><path d="M12 5l6 6-3 1-4-4z" fill="#8a8f95"/></svg>',
   iron: '<svg viewBox="0 0 24 24"><path d="M3 15l4-6h10l4 6z" fill="#8d949c"/><path d="M7 9h10l1.5 2.2h-13z" fill="#b9bfc5"/><rect x="3" y="15" width="18" height="3" fill="#6f7680"/></svg>',
+  cloth: '<svg viewBox="0 0 24 24"><path d="M4 6h13l3 3v9H7l-3-3z" fill="#6a5a9a"/><path d="M4 6l3 3h13M7 9v9" stroke="#4a3d74" stroke-width="1.2" fill="none"/><path d="M9 12h9M9 15h9" stroke="#8c7cbc" stroke-width="1"/></svg>',
   mood: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#f2c230"/><circle cx="9" cy="10" r="1.3" fill="#2e2116"/><circle cx="15" cy="10" r="1.3" fill="#2e2116"/><path d="M8 14.5q4 3.5 8 0" stroke="#2e2116" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>',
   people: '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.5" fill="#f0c39b"/><path d="M6 21c0-5 3-8 6-8s6 3 6 8z" fill="#7a6a55"/></svg>',
 };
 
-const ROOF = { tavern: '#7a5230', chapel: '#6d6a64', plaza: '#a29f96', monument: '#c9a227', townhall: '#b3472f', oremine: '#6d6a64', coalmine: '#3b3735', smelter: '#b3472f', market: '#c6283c', sawmill: '#7a5230', toolmaker: '#b3472f', tower: '#b3472f', sheepfarm: '#c9a24a', well: '#a2612f', warehouse: '#b3472f', builderhut: '#7a5230', farm: '#c9a24a', mill: '#8a5a32', bakery: '#b3472f', woodcutter: '#c9a24a', quarry: '#6d6a64', gatherer: '#c9a24a', fisher: '#5d7d95', house: '#b3472f' };
-const WALL = { tavern: '#c9a77a', chapel: '#ece0c4', plaza: '#c9c9c6', monument: '#c9c9c6', townhall: '#ece0c4', oremine: '#c0714a', coalmine: '#a29f96', smelter: '#a29f96', market: '#e8c440', sawmill: '#c9a77a', toolmaker: '#a29f96', tower: '#c9c9c6', sheepfarm: '#c9a77a', well: '#c9c9c6', warehouse: '#ece0c4', builderhut: '#c9a77a', farm: '#e2d2a8', mill: '#ece0c4', bakery: '#ece0c4', woodcutter: '#c9a77a', quarry: '#a29f96', gatherer: '#d8c49a', fisher: '#b9a27e', house: '#ece0c4' };
+const ROOF = { weaver: '#b3472f', tavern: '#7a5230', chapel: '#6d6a64', plaza: '#a29f96', monument: '#c9a227', townhall: '#b3472f', oremine: '#6d6a64', coalmine: '#3b3735', smelter: '#b3472f', market: '#c6283c', sawmill: '#7a5230', toolmaker: '#b3472f', tower: '#b3472f', sheepfarm: '#c9a24a', well: '#a2612f', warehouse: '#b3472f', builderhut: '#7a5230', farm: '#c9a24a', mill: '#8a5a32', bakery: '#b3472f', woodcutter: '#c9a24a', quarry: '#6d6a64', gatherer: '#c9a24a', fisher: '#5d7d95', house: '#b3472f' };
+const WALL = { weaver: '#c9a77a', tavern: '#c9a77a', chapel: '#ece0c4', plaza: '#c9c9c6', monument: '#c9c9c6', townhall: '#ece0c4', oremine: '#c0714a', coalmine: '#a29f96', smelter: '#a29f96', market: '#e8c440', sawmill: '#c9a77a', toolmaker: '#a29f96', tower: '#c9c9c6', sheepfarm: '#c9a77a', well: '#c9c9c6', warehouse: '#ece0c4', builderhut: '#c9a77a', farm: '#e2d2a8', mill: '#ece0c4', bakery: '#ece0c4', woodcutter: '#c9a77a', quarry: '#a29f96', gatherer: '#d8c49a', fisher: '#b9a27e', house: '#ece0c4' };
 const WELL_ICON = '<svg viewBox="0 0 32 32"><rect x="8" y="10" width="2.5" height="12" fill="#9a5a30"/><rect x="21.5" y="10" width="2.5" height="12" fill="#9a5a30"/><path d="M5 12L16 5l11 7z" fill="#a2612f"/><rect x="7" y="19" width="18" height="9" rx="1.5" fill="#c9c9c6"/><path d="M7 23h18M12 19v4M20 19v4M16 23v5" stroke="#97979a" stroke-width="1"/><rect x="14.5" y="13" width="3" height="3.5" fill="#7a4a28"/></svg>';
 const BRIDGE_ICON = '<svg viewBox="0 0 32 32"><rect x="2" y="22" width="28" height="6" fill="#5d9bd0"/><path d="M3 18q13-8 26 0v3q-13-7-26 0z" fill="#a0703f"/><path d="M3 13q13-8 26 0" stroke="#8a5a32" stroke-width="1.5" fill="none"/><path d="M9 11v7M16 8.5v6M23 11v7" stroke="#8a5a32" stroke-width="1.5"/></svg>';
 const MONUMENT_ICON = '<svg viewBox="0 0 32 32"><rect x="6" y="25" width="20" height="3" fill="#a29f96"/><rect x="9" y="21" width="14" height="4" fill="#c9c9c6"/><path d="M13 21l1.5-15h3L19 21z" fill="#ddd8cc"/><path d="M14.5 6L16 3l1.5 3z" fill="#c9a227"/></svg>';
@@ -166,6 +167,7 @@ export class Hud {
         <div class="res" data-k="planks">${ICONS.planks}<b></b><span>Bretter</span></div>
         <div class="res" data-k="tools">${ICONS.tools}<b></b><span>Werkzeug</span></div>
         <div class="res" data-k="iron">${ICONS.iron}<b></b><span>Eisen</span></div>
+        <div class="res" data-k="cloth" hidden>${ICONS.cloth}<b></b><span>Tuch</span></div>
         <div class="res" data-k="pop">${ICONS.people}<b></b><span></span></div>
         <div class="res" data-k="mood">${ICONS.mood}<b></b><span>Zufriedenheit</span></div>
         <div class="crew" data-k="builders" title="Bauarbeiter: beschäftigt / vorhanden"></div>
@@ -346,7 +348,14 @@ export class Hud {
     this.res.iron.querySelector('b').textContent = stock.iron;
     this.res.iron.title = `Eisen ${stock.iron}, Erz ${stock.ore}, Kohle ${stock.coal}`;
     this.res.food.querySelector('b').textContent = game.foodPoints();
-    this.res.food.title = `Nahrung ${game.total('food')}, Brot ${game.total('bread')} (je ${BREAD_FOOD}), Getreide ${game.total('grain')}, Mehl ${game.total('flour')}`;
+    this.res.food.title = `${Object.entries(FOOD_VALUE).map(([k, v]) => `${ITEMS[k]} ${game.total(k)}${v > 1 ? ` (je ${v})` : ''}`).join(', ')}; Getreide ${game.total('grain')}, Mehl ${game.total('flour')}`;
+    // Tuch erst zeigen, wenn es eine Weberei gibt oder Tuch im Lager liegt
+    const weaving = game.buildings.some((b) => b.type === 'weaver' && !b.removed) || game.total('cloth') > 0;
+    this.res.cloth.hidden = !weaving;
+    this.res.cloth.querySelector('b').textContent = stock.cloth;
+    const need = Math.ceil(game.settlers.length * WARMTH.perSettler);
+    this.res.cloth.title = `Tuch ${stock.cloth}, Wolle ${stock.wool}. Im Winter braucht das Dorf ${need} Tuch für warme Kleidung`
+      + (game.season.key === 'winter' ? ` (versorgt: ${Math.round((game.warmth || 0) * 100)} %)` : '');
     this.res.pop.querySelector('b').textContent = `${game.settlers.length}/${game.housing}`;
     this.res.pop.querySelector('span').textContent = `Siedler, ${game.freeCount} frei`;
     const mood = Math.round(game.happiness);
@@ -511,7 +520,8 @@ export class Hud {
     if (def.produces) {
       if (ref.workers[0]) p.push(`<p>${ref.workers[0].status}</p>`);
       if (def.consumes) p.push(`<p><em>Vorrat:</em> ${Object.entries(recipe(ref)).map(([k, n]) => `${ITEMS[k]} ${ref.inputs[k] || 0}/${outputCap(ref) * n}`).join(' · ')}</p>`);
-      if (def.sheep) p.push(`<p><em>Schafe:</em> ${def.sheep[ref.level - 1]}</p>`);
+      if (def.sheep) p.push(`<p><em>Schafe:</em> ${def.sheep[ref.level - 1]}${def.side ? ` · <em>Wolle am Hof:</em> ${ref.side.wool || 0}` : ''}</p>`);
+      if (ref.type === 'weaver') p.push(`<p>Tuch wird im Winter zu warmer Kleidung: Wer versorgt ist, braucht nicht mehr Nahrung als sonst und ist zufriedener. Dafür braucht das Dorf je Winter ${WARMTH.perSettler} Tuch je Siedler.</p>`);
       if (def.fields) {
         const mine = game.fields.filter((f) => f.farm === ref);
         p.push(`<p><em>Felder:</em> ${mine.length}/${def.fields[ref.level - 1]}, davon reif: ${mine.filter((f) => f.state === 'ripe').length}</p>`);

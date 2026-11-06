@@ -13,6 +13,8 @@ export function createBuilding(id, type, x, z, done) {
     builders: [], workers: [], removed: false,
     output: 0, outReserved: 0,
     inputs: {}, inIncoming: {},
+    // Nebenprodukt (Wolle an der Schäferei), holen die Träger wie die Ablage
+    side: {}, sideReserved: {},
     stock: Object.fromEntries(Object.keys(ITEMS).map((k) => [k, 0])),
   };
 }

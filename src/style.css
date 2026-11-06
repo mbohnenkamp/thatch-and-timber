@@ -331,3 +331,4 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #honor dt { color: var(--muted); }
 #honor dd { margin: 0; font-weight: 600; }
 #honor p { font-size: 13px; color: var(--muted); }
+.res[hidden] { display: none; }

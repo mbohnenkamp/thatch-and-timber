@@ -6,9 +6,9 @@ import { createSettler, updateSettler, abortSettler, releaseJob, hasOpenWorkplac
 import {
   createBuilding, placeError, bridgeTiles, isSite, siteCost, siteNeeds, upgradeCost, housingOf, outputItem,
 } from './entities/buildings.js';
-import { updateEconomy } from './economy.js';
+import { updateEconomy, updateWarmth } from './economy.js';
 import { updateHappiness } from './happiness.js';
-import { FEST_TIME, START, BUILDINGS, WORK_RADIUS, ITEMS, GRAIN_GROW_TIME, BREAD_FOOD, ROAD, CART } from './config.js';
+import { FEST_TIME, START, BUILDINGS, WORK_RADIUS, ITEMS, GRAIN_GROW_TIME, FOOD_VALUE, ROAD, CART } from './config.js';
 
 const ITEM_KEYS = Object.keys(ITEMS);
 const NAME_A = ['Eichen', 'Birken', 'Linden', 'Buchen', 'Tannen', 'Hasel', 'Erlen', 'Weiden', 'Mühl', 'Stein', 'Rosen', 'Falken', 'Hirsch', 'Kranich', 'Wolfs', 'Sonnen'];
@@ -40,6 +40,8 @@ export class Game {
     this.cityAt = null;
     this.metroAt = null;
     this.happiness = 50;
+    this.warmth = 0;
+    this.clothGot = 0;
     this.festUntil = 0;
     this.growthTimer = 0;
     this.checkTimer = 0;
@@ -137,8 +139,8 @@ export class Game {
     return Object.entries(cost).every(([item, amount]) => this.available(item) >= amount);
   }
 
-  // Nahrung zählt Beeren/Fisch einfach, Brot dreifach
-  foodPoints() { return this.total('food') + this.total('bread') * BREAD_FOOD; }
+  // Nahrungspunkte: Beeren, Fisch, Milch einfach, Brot dreifach (FOOD_VALUE)
+  foodPoints() { return Object.entries(FOOD_VALUE).reduce((sum, [k, v]) => sum + this.total(k) * v, 0); }
 
   takeItem(item) {
     const w = this.warehouses.reduce((a, b) => (b.stock[item] > (a?.stock[item] ?? 0) ? b : a), null);
@@ -151,9 +153,9 @@ export class Game {
   eat(points) {
     let paid = 0;
     while (paid < points) {
-      if (this.takeItem('food')) paid += 1;
-      else if (this.takeItem('bread')) paid += BREAD_FOOD;
-      else break;
+      const item = Object.keys(FOOD_VALUE).find((k) => this.takeItem(k));
+      if (!item) break;
+      paid += FOOD_VALUE[item];
     }
     return paid;
   }
@@ -561,6 +563,7 @@ export class Game {
     const refund = b.done ? Object.entries(BUILDINGS[b.type].cost).map(([k, v]) => [k, Math.floor(v / 2)]) : [];
     for (const [item, n] of [...refund, ...Object.entries(b.delivered)]) this.store(b, item, n, b);
     for (const item of ITEM_KEYS) this.store(b, item, b.stock[item], b);
+    for (const [item, n] of Object.entries(b.side)) this.store(b, item, n, b);
     if (outputItem(b)) this.store(b, outputItem(b), b.output, b);
     for (const [item, n] of Object.entries(b.inputs)) this.store(b, item, n, b);
     for (const f of this.fields.filter((f) => f.farm === b)) this.removeField(f);
@@ -631,13 +634,14 @@ export class Game {
     const warnKey = `${this.season.year}`;
     if (this.seasonsOn && this.season.key === 'autumn' && this.season.progress > 0.6 && this.winterWarned !== warnKey) {
       this.winterWarned = warnKey;
-      this.emit('toast', 'Bald kommt der Winter. Sorge für Vorräte: Brot, Fisch und Milch helfen.');
+      this.emit('toast', `Bald kommt der Winter. Sorge für Vorräte: Brot, Fisch und Milch helfen.${this.buildings.some((b) => b.type === 'weaver' && !b.removed) ? ' Tuch aus der Weberei hält warm.' : ''}`);
     }
     updateResources(this, dt);
     this.updateFields(dt);
     for (const s of this.settlers) updateSettler(this, s, dt);
     for (const c of this.carts) updateSettler(this, c, dt);
     this.updateRoads(dt);
+    updateWarmth(this, dt);
     updateEconomy(this, dt);
     updateHappiness(this, dt);
     if (this.hungry) this.hungerTime += dt;
@@ -672,11 +676,14 @@ export class Game {
       cityAt: this.cityAt,
       metroAt: this.metroAt,
       happiness: Math.round(this.happiness),
+      warmth: this.warmth,
+      clothGot: this.clothGot,
       nextId: this.nextId,
       resources: this.resources.map((n) => [n.amount, Math.round(n.timer * 10) / 10, n.gone ? 1 : 0]),
       buildings: this.buildings.map((b) => ({
         id: b.id, type: b.type, x: b.x, z: b.z, done: b.done, level: b.level, upgrading: b.upgrading,
         progress: b.progress, delivered: b.delivered, stock: b.stock, output: b.output, inputs: b.inputs,
+        ...(Object.values(b.side).some((n) => n > 0) && { side: b.side }),
         ...(b.span && { span: b.span }),
         ...(b.trade && { trade: b.trade }),
         ...(b.servedUntil && { servedUntil: b.servedUntil }),
@@ -702,6 +709,8 @@ export class Game {
     g.cityAt = d.cityAt ?? null;
     g.metroAt = d.metroAt ?? null;
     g.happiness = d.happiness ?? 50;
+    g.warmth = d.warmth || 0;
+    g.clothGot = d.clothGot || 0;
     g.nextId = d.nextId;
 
     d.resources.forEach(([amount, timer, gone], i) => {
@@ -728,6 +737,7 @@ export class Game {
         inputs: bd.inputs || (bd.input ? { [Object.keys(BUILDINGS[bd.type].consumes)[0]]: bd.input } : {}),
         trade: bd.trade || null,
         servedUntil: bd.servedUntil || 0,
+        side: bd.side || {},
       });
       if (bd.stock) Object.assign(b.stock, bd.stock);
       // Spielstände von vor den Werkzeugen bekommen den Startvorrat
