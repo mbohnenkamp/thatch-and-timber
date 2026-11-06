@@ -410,8 +410,9 @@ export class Renderer {
   }
 
   addField(f) {
-    this.grass.setTile(f.x, f.z, false);
-    const o = M.fieldModel();
+    const tree = f.farm.type === 'orchard';
+    if (!tree) this.grass.setTile(f.x, f.z, false);
+    const o = tree ? M.orchardTreeModel() : M.fieldModel();
     o.position.set(f.x + 0.5, this.grid.heightAt(f.x + 0.5, f.z + 0.5), f.z + 0.5);
     o.userData.entity = { kind: 'field', ref: f };
     this.scene.add(o);
@@ -506,7 +507,7 @@ export class Renderer {
     this.tileMarker.visible = false;
     this.radiusRing.visible = false;
     const def = type && BUILDINGS[type];
-    this.ghostRadius = def?.resource ? WORK_RADIUS[0] : def?.fieldRadius ? def.fieldRadius[0] + 0.5 : def?.houseBonus ? def.radius : def?.territory ? def.territory[0] : 0;
+    this.ghostRadius = def?.resource ? WORK_RADIUS[0] : def?.fieldRadius ? def.fieldRadius[0] + 0.5 : def?.houseBonus ? def.radius : def?.beeRadius ? def.beeRadius : def?.territory ? def.territory[0] : 0;
     this.radiusRing.scale.setScalar(this.ghostRadius || 1);
     if (!type) return;
     this.ghostType = type;

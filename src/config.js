@@ -29,7 +29,7 @@ export const GRAIN_GROW_TIME = 70;
 export const FIELD_YIELD = 2;
 export const BREAD_FOOD = 3;
 // Nahrungspunkte je Stück; gegessen wird in dieser Reihenfolge
-export const FOOD_VALUE = { food: 1, bread: BREAD_FOOD };
+export const FOOD_VALUE = { food: 1, fruit: 2, bread: BREAD_FOOD, honey: 2 };
 
 // Jahreszeiten: Dauer je Jahreszeit (2 Spieltage) und Auswirkungen
 export const SEASON_LENGTH = 1200;
@@ -39,6 +39,11 @@ export const SEASONS = [
   { key: 'autumn', name: 'Herbst', grain: 0.8, berries: 1.5, fish: 1, trees: 1, hunger: 1, sow: true },
   { key: 'winter', name: 'Winter', grain: 0, berries: 0, fish: 0.6, trees: 0, hunger: 1.15, sow: false },
 ];
+
+// Obstbäume wachsen growTime Spielsekunden (ohne Winter), dann trägt jeder Baum jeden Herbst
+export const ORCHARD = { growTime: 3 * SEASON_LENGTH, yield: 3, beeYield: 1 };
+// Bienen einer besetzten Imkerei: Felder und Obstbäume im Umkreis wachsen schneller, Bäume tragen mehr
+export const BEES = { radius: 8, boost: 0.25 };
 
 // Wege entstehen, wo viel gelaufen wird. Stufe 0 = Wiese, 1 = Trampelpfad, 2 = Straße
 export const ROAD = {
@@ -144,6 +149,18 @@ export const BUILDINGS = {
     sheep: [4, 6, 8], milkTime: 7, herdRadius: 3,
     // Bei jeder woolEvery-ten Runde schert der Schäfer auch; Wolle wartet am Hof auf die Träger (höchstens woolCap)
     side: 'wool', woolEvery: 3, woolCap: 8,
+    upgrades: [{ planks: 3, stone: 4 }, { planks: 6, stone: 6 }],
+  },
+  // Der Imker holt Honig aus den Stöcken am Haus; im Winter ruhen die Bienen
+  beekeeper: {
+    name: 'Imkerei', group: 'food', unlock: 1, cost: { wood: 5, stone: 2 }, buildTime: 10, job: 'Imker', produces: 'honey',
+    hiveTime: 12, hiveRadius: 2, beeRadius: 8,
+    upgrades: [{ planks: 3, stone: 3 }, { planks: 6, stone: 6 }],
+  },
+  // Der Gärtner pflanzt Obstbäume; sie tragen ab dem zweiten Jahr jeden Herbst
+  orchard: {
+    name: 'Obstgarten', group: 'food', unlock: 1, cost: { wood: 6, stone: 2 }, buildTime: 12, job: 'Gärtner', produces: 'fruit',
+    trees: [4, 6, 8], fieldRadius: [3, 3, 4],
     upgrades: [{ planks: 3, stone: 4 }, { planks: 6, stone: 6 }],
   },
   // Wolle aus der Schäferei wird zu Tuch, das im Winter warm hält

@@ -51,7 +51,7 @@ export function makeBot(g) {
 
   const ORDER = [
     'woodcutter', 'gatherer', 'quarry', 'fisher', 'house', 'woodcutter', 'farm', 'sawmill', 'quarry', 'house', 'mill',
-    'bakery', 'well', 'toolmaker', 'oremine', 'coalmine', 'smelter', 'sheepfarm', 'weaver', 'house', 'woodcutter', 'gatherer', 'house', 'farm', 'house', 'sheepfarm', 'house', 'house',
+    'bakery', 'well', 'toolmaker', 'oremine', 'coalmine', 'smelter', 'sheepfarm', 'weaver', 'beekeeper', 'orchard', 'house', 'woodcutter', 'gatherer', 'house', 'farm', 'house', 'sheepfarm', 'house', 'house',
   ];
   let next = 0;
   const log = [];

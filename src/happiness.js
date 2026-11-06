@@ -2,7 +2,7 @@ import { BUILDINGS, HAPPINESS, WARMTH } from './config.js';
 
 // Zufriedenheit 0..100: Grundstimmung plus Essen, Versorgung der Wohnhäuser durch Brunnen,
 // Wirtshaus, Kapelle und Marktplatz; Hunger und Enge ziehen ab.
-const FOOD_SOURCES = ['gatherer', 'fisher', 'sheepfarm', 'bakery'];
+const FOOD_SOURCES = ['gatherer', 'fisher', 'sheepfarm', 'bakery', 'beekeeper', 'orchard'];
 
 const active = (g, b) => b.done && !b.removed && (b.type !== 'tavern' || (b.workers.length && b.servedUntil > g.time));
 

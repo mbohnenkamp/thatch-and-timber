@@ -8,7 +8,7 @@ import {
 } from './entities/buildings.js';
 import { updateEconomy, updateWarmth } from './economy.js';
 import { updateHappiness } from './happiness.js';
-import { FEST_TIME, START, BUILDINGS, WORK_RADIUS, ITEMS, GRAIN_GROW_TIME, FOOD_VALUE, ROAD, CART } from './config.js';
+import { FEST_TIME, START, BUILDINGS, WORK_RADIUS, ITEMS, GRAIN_GROW_TIME, FOOD_VALUE, ROAD, CART, ORCHARD, BEES } from './config.js';
 
 const ITEM_KEYS = Object.keys(ITEMS);
 const NAME_A = ['Eichen', 'Birken', 'Linden', 'Buchen', 'Tannen', 'Hasel', 'Erlen', 'Weiden', 'Mühl', 'Stein', 'Rosen', 'Falken', 'Hirsch', 'Kranich', 'Wolfs', 'Sonnen'];
@@ -403,10 +403,30 @@ export class Game {
     return best;
   }
 
+  // Besetzte Imkerei in Reichweite?
+  beesNear(pos, hives = this.activeHives()) {
+    return hives.some((h) => Math.hypot(h.x - pos.x, h.z - pos.z) <= BEES.radius);
+  }
+
+  activeHives() {
+    return this.buildings.filter((b) => b.type === 'beekeeper' && b.done && !b.removed && b.workers.length);
+  }
+
   updateFields(dt) {
+    const hives = this.activeHives();
     for (const f of this.fields) {
+      const boost = hives.length && this.beesNear(f, hives) ? 1 + BEES.boost : 1;
+      if (f.farm.type === 'orchard') {
+        // Obstbaum: wächst außer im Winter, trägt dann jeden Herbst einmal
+        if (f.state === 'growing' && this.season.key !== 'winter') {
+          f.growth = Math.min(1, f.growth + (dt * boost) / ORCHARD.growTime);
+          if (f.growth >= 1) f.state = 'mature';
+        }
+        if (f.state === 'mature' && this.season.key === 'autumn' && f.fruitYear !== this.season.year) f.state = 'ripe';
+        continue;
+      }
       if (f.state !== 'growing') continue;
-      f.growth = Math.min(1, f.growth + (dt * this.season.grain) / GRAIN_GROW_TIME);
+      f.growth = Math.min(1, f.growth + (dt * this.season.grain * boost) / GRAIN_GROW_TIME);
       if (f.growth >= 1) f.state = 'ripe';
     }
   }
@@ -690,7 +710,7 @@ export class Game {
       })),
       roadPlans: this.roadPlans.map((p) => [p.x, p.z]),
       roads: [...this.grid.traffic].flatMap((t, i) => (t > 0 ? [[i, Math.round(t * 10) / 10, this.grid.road[i]]] : [])),
-      fields: this.fields.filter((f) => f.state !== 'planned').map((f) => [f.x, f.z, f.farm.id, f.state, Math.round(f.growth * 1000) / 1000]),
+      fields: this.fields.filter((f) => f.state !== 'planned').map((f) => [f.x, f.z, f.farm.id, f.state, Math.round(f.growth * 1000) / 1000, ...(f.fruitYear ? [f.fruitYear] : [])]),
       settlers: this.settlers.map((s) => ({
         name: s.name, x: s.x, z: s.z, job: s.job, workplace: s.workplace ? s.workplace.id : null,
       })),
@@ -762,12 +782,13 @@ export class Game {
 
     g.roadPlans = (d.roadPlans || []).map(([x, z]) => ({ x, z, builder: null }));
 
-    for (const [x, z, farmId, state, growth] of d.fields || []) {
+    for (const [x, z, farmId, state, growth, fruitYear] of d.fields || []) {
       const farm = g.buildings.find((b) => b.id === farmId);
       if (!farm) continue;
       const f = g.addField(x, z, farm);
       f.state = state;
       f.growth = growth;
+      f.fruitYear = fruitYear || 0;
     }
 
     for (const sd of d.settlers) {

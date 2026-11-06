@@ -1,5 +1,5 @@
 import {
-  SETTLER_SPEED, CARRY_AMOUNT, RESOURCES, BUILDINGS, ITEMS, MAX_BUILDERS_PER_SITE, FIELD_YIELD, ROAD, CART, NO_TOOL_JOBS, WARMTH,
+  SETTLER_SPEED, CARRY_AMOUNT, RESOURCES, BUILDINGS, ITEMS, MAX_BUILDERS_PER_SITE, FIELD_YIELD, ROAD, CART, NO_TOOL_JOBS, WARMTH, ORCHARD,
 } from '../config.js';
 import {
   isSite, siteNeeds, siteBuildTime, siteCap, slots, outputItem, outputAmount, outputCap, recipe, hasInputs, useInputs, workSpeed,
@@ -146,6 +146,8 @@ function plan(game, s) {
   else if (s.job) {
     const def = BUILDINGS[s.workplace.type];
     if (def.fields) planFarmer(game, s);
+    else if (def.trees) planGardener(game, s);
+    else if (def.hiveTime) planBeekeeper(game, s);
     else if (def.sheep) planShepherd(game, s);
     else if (def.serves) planInnkeeper(game, s);
     else if (!def.resource && (def.consumes || def.trade)) planProcessor(game, s);
@@ -279,6 +281,101 @@ function planShepherd(game, s) {
     },
     { type: 'work', time: 1, rest: true, face: b, status: 'Legt ab' },
   );
+}
+
+// --- Imker: geht zu den Bienenstöcken am Haus, holt Honig; im Winter Pause ---
+
+function planBeekeeper(game, s) {
+  const b = s.workplace;
+  const def = BUILDINGS[b.type];
+  const wait = (status, time = 4) => s.steps.push(go(b.x, b.z, true, status), { type: 'work', time, rest: true, face: b });
+  if (b.output + 1 > outputCap(b)) return wait('Ablage voll, wartet auf Träger', 3);
+  if (game.season.key === 'winter') return wait('Die Bienen halten Winterruhe', 6);
+  const g = game.grid;
+  let spot = null;
+  for (let i = 0; i < 12 && !spot; i++) {
+    const x = b.x + Math.round((Math.random() * 2 - 1) * def.hiveRadius);
+    const z = b.z + Math.round((Math.random() * 2 - 1) * def.hiveRadius);
+    if ((x !== b.x || z !== b.z) && g.walkable(x, z)) spot = { x, z };
+  }
+  if (!spot) return wait('Kein Platz für die Bienenstöcke', 5);
+  s.steps.push(
+    go(spot.x, spot.z, false, 'Geht zu den Bienenstöcken'),
+    { type: 'work', time: def.hiveTime / workSpeed(game, b), face: b, status: 'Holt Honig aus den Waben', sound: 'pick' },
+    { type: 'call', fn: () => { s.carry = 'honey'; } },
+    go(b.x, b.z, true, 'Bringt Honig zur Imkerei'),
+    {
+      type: 'call',
+      fn: () => {
+        if (!s.carry) return;
+        b.output += 1;
+        s.carry = null;
+        game.emit('sfx', { name: 'drop', x: s.x, z: s.z });
+      },
+    },
+    { type: 'work', time: 1, rest: true, face: b, status: 'Legt ab' },
+  );
+}
+
+// --- Gärtner: pflanzt Obstbäume, erntet jeden Herbst ---
+
+function planGardener(game, s) {
+  const b = s.workplace;
+  const def = BUILDINGS[b.type];
+  const trees = game.fields.filter((f) => f.farm === b);
+  const amount = ORCHARD.yield + (game.beesNear(b) ? ORCHARD.beeYield : 0);
+  const full = b.output + amount > outputCap(b);
+  const ripe = !full && nearest(s, trees.filter((f) => f.state === 'ripe' && !f.reserved));
+  if (ripe) {
+    ripe.reserved = true;
+    s.onAbort = () => { ripe.reserved = false; };
+    s.steps.push(
+      go(ripe.x, ripe.z, true, 'Geht zum Obstbaum'),
+      { type: 'work', time: 4 / workSpeed(game, b), face: ripe, status: 'Pflückt Obst', sound: 'pick' },
+      {
+        type: 'call',
+        fn: () => {
+          s.onAbort = null;
+          ripe.reserved = false;
+          if (ripe.removed || ripe.state !== 'ripe') return;
+          ripe.state = 'mature';
+          ripe.fruitYear = game.season.year;
+          s.carry = 'fruit';
+        },
+      },
+      go(b.x, b.z, true, 'Bringt Obst zum Garten'),
+      {
+        type: 'call',
+        fn: () => {
+          if (!s.carry) return;
+          b.output += amount;
+          s.carry = null;
+          game.emit('sfx', { name: 'drop', x: s.x, z: s.z });
+        },
+      },
+      { type: 'work', time: 1, rest: true, face: b, status: 'Legt ab' },
+    );
+    return;
+  }
+  // Gepflanzt wird im Frühling und Sommer
+  if (trees.length < def.trees[b.level - 1] && ['spring', 'summer'].includes(game.season.key)) {
+    const spot = game.findFieldSpot(b);
+    if (spot) {
+      const tree = game.addField(spot.x, spot.z, b);
+      s.onAbort = () => game.removeField(tree);
+      s.steps.push(
+        go(spot.x, spot.z, true, 'Geht einen Obstbaum pflanzen'),
+        { type: 'work', time: 4 / workSpeed(game, b), face: spot, status: 'Pflanzt einen Obstbaum', sound: 'pick' },
+        { type: 'call', fn: () => { s.onAbort = null; game.sowField(tree); } },
+      );
+      return;
+    }
+  }
+  const status = full ? 'Ablage voll, wartet auf Träger'
+    : trees.some((f) => f.state === 'growing') ? 'Die jungen Bäume wachsen noch, sie tragen ab dem zweiten Jahr'
+      : trees.length ? 'Wartet auf den Herbst, dann ist das Obst reif'
+        : ['spring', 'summer'].includes(game.season.key) ? 'Findet keinen Platz für Obstbäume' : 'Pflanzt erst im Frühling';
+  s.steps.push(go(b.x, b.z, true, status), { type: 'work', time: 4, rest: true, face: b });
 }
 
 // --- Bauer: Felder anlegen, wachsen lassen, ernten ---
@@ -457,7 +554,8 @@ function planTransport(game, s, cap, reach, reachWarehouse) {
   const warehouses = game.warehouses.filter(reachWarehouse);
   if (!warehouses.length) return false;
   const huts = game.buildings.filter((b) => b.done && !b.removed && outputItem(b) && b.output - b.outReserved >= minPickup && reach(b));
-  const fullHut = nearest(s, huts.filter((b) => b.output >= outputCap(b)));
+  // Voll = die nächste Lieferung passt nicht mehr in die Ablage (Obst, Getreide kommen mehrere auf einmal)
+  const fullHut = nearest(s, huts.filter((b) => b.output + batchOf(game, b) > outputCap(b)));
   if (fullHut) return collect(game, s, fullHut, cap, warehouses), true;
 
   const task = findDelivery(game, s, cap, reach, warehouses);
@@ -476,6 +574,13 @@ function planTransport(game, s, cap, reach, reachWarehouse) {
   const hut = nearest(s, huts);
   if (hut) return collect(game, s, hut, cap, warehouses), true;
   return false;
+}
+
+function batchOf(game, b) {
+  const def = BUILDINGS[b.type];
+  if (def.trees) return ORCHARD.yield + (game.beesNear(b) ? ORCHARD.beeYield : 0);
+  if (def.fields) return FIELD_YIELD;
+  return outputAmount(b);
 }
 
 function nearest(from, list) {
@@ -666,7 +771,7 @@ function deliver(game, s, { site, item, wh, amount }) {
 // Neue Berufe brauchen ein Werkzeug aus dem Lager (außer Träger und Bauarbeiter)
 export const needsTool = (b) => !NO_TOOL_JOBS.includes(BUILDINGS[b.type].job);
 
-const FOOD_CHAIN = ['food', 'grain', 'flour', 'bread'];
+const FOOD_CHAIN = ['food', 'grain', 'flour', 'bread', 'honey', 'fruit'];
 const makesFood = (b) => FOOD_CHAIN.includes(outputItem(b));
 
 function openWorkplace(game, s) {

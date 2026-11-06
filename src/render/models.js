@@ -323,6 +323,7 @@ export function buildingModel(type, level = 1, upgrading = false) {
   if (!kit && !custom && type !== 'house' && type !== 'warehouse' && level >= 2) g.add(annex(-0.5, -0.32, ROOF[type]));
   if (!kit && !custom && type !== 'house' && level >= 3) g.add(annex(0.52, -0.34, ROOF[type]));
   if (type === 'sheepfarm' && !custom) g.add(fence());
+  if (type === 'beekeeper') hives(g);
   if ((type === 'tower' || type === 'townhall') && kit) g.add(towerFlag(type === 'townhall' ? 3 : level));
   if (LEVEL_FLAG[level - 1]) g.add(flag(LEVEL_FLAG[level - 1]));
   if (upgrading) g.add(scaffold());
@@ -409,6 +410,40 @@ export function fieldModel() {
     crop.material.color.copy(GREEN).lerp(GOLD, Math.max(0, (f.growth - 0.6) / 0.4));
   };
   return g;
+}
+
+// Obstbaum im Obstgarten: klein gepflanzt, wächst heran, im Herbst mit roten Früchten
+const fruitGeom = shared(mergeGeometries(
+  Array.from({ length: 9 }, (_, i) => {
+    const a = (i / 9) * Math.PI * 2, y = 0.62 + (i % 3) * 0.1;
+    return new THREE.IcosahedronGeometry(0.045, 0).translate(Math.cos(a) * 0.2, y, Math.sin(a) * 0.2);
+  }),
+));
+const crownGeom = shared(new THREE.IcosahedronGeometry(0.26, 0).translate(0, 0.68, 0));
+
+export function orchardTreeModel() {
+  const g = new THREE.Group();
+  const tree = new THREE.Group();
+  tree.add(cyl(0.035, 0.05, 0.5, 6, '#7a5230'));
+  const crown = mesh(crownGeom, '#5f9b3f');
+  tree.add(crown);
+  const fruit = mesh(fruitGeom, '#d0432f');
+  tree.add(fruit);
+  g.add(tree);
+  g.userData.update = (f) => {
+    tree.visible = f.state !== 'planned';
+    tree.scale.setScalar(f.state === 'growing' ? 0.35 + 0.65 * f.growth : 1);
+    fruit.visible = f.state === 'ripe';
+  };
+  return g;
+}
+
+// Bienenstöcke neben der Imkerei
+function hives(g) {
+  for (const [x, z] of [[0.68, 0.5], [0.68, 0.12], [-0.68, 0.5]]) {
+    g.add(box(0.16, 0.18, 0.16, '#c9a24a', x, 0, z));
+    g.add(box(0.2, 0.04, 0.2, '#7a5230', x, 0.18, z));
+  }
 }
 
 export function siteModel(type) {
