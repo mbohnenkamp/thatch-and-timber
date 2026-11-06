@@ -1,4 +1,5 @@
 import { BUILDINGS } from './config.js';
+import { CHAPTERS } from './campaign.js';
 
 // Aufgaben nacheinander; jede erledigte hebt die Dorfstufe und bringt eine kleine Belohnung.
 // progress(g) liefert [erreicht, Ziel]; rank = Dorfstufe nach Erledigung.
@@ -29,11 +30,13 @@ export const GOALS = [
   { text: 'Errichte die Burg mit Mauer, Türmen und Bergfried', progress: (g) => [count(g, 'castle', (b) => b.done && b.level >= 3 && !b.upgrading), 1], reward: { wood: 50, stone: 50 }, rank: 6 },
 ];
 
-export const currentGoal = (g) => GOALS[g.goal] || null;
-export const rankIndex = (g) => (g.goal > 0 ? GOALS[g.goal - 1].rank : 0);
+// Kampagnenkarten haben eigene Kapitelziele
+export const goalsOf = (g) => (g.campaign ? CHAPTERS[g.campaign.chapter].goals : GOALS);
+export const currentGoal = (g) => goalsOf(g)[g.goal] || null;
+export const rankIndex = (g) => (g.goal > 0 ? goalsOf(g)[g.goal - 1].rank : 0);
 export const rankOf = (g) => RANKS[rankIndex(g)];
-// Gebäude werden mit der Dorfstufe freigeschaltet
-export const isUnlocked = (g, type) => (BUILDINGS[type].unlock || 0) <= rankIndex(g);
+// Gebäude werden mit der Dorfstufe freigeschaltet; in der Kampagne ist alles bis zur Großstadt da, die Burg nicht
+export const isUnlocked = (g, type) => (BUILDINGS[type].unlock || 0) <= (g.campaign ? CITY : rankIndex(g));
 export const unlockedAt = (rank) => Object.keys(BUILDINGS).filter((t) => BUILDINGS[t].unlock === rank);
 
 export function updateGoals(g, dt) {
@@ -50,6 +53,11 @@ export function updateGoals(g, dt) {
   if (w) for (const [item, n] of Object.entries(goal.reward)) g.store(w, item, n);
   const rankUp = rankOf(g) !== before;
   let honor = null;
+  if (g.campaign) {
+    if (!currentGoal(g)) { g.campaign.doneAt = g.time; honor = 'chapter'; }
+    g.emit('goal', { goal, reward: goal.reward, rank: rankOf(g), rankUp, unlocked: [], honor });
+    return;
+  }
   if (rankIndex(g) === CITY && g.cityAt == null) { g.cityAt = g.time; honor = 'city'; }
   if (rankUp && rankIndex(g) === METRO && g.metroAt == null) { g.metroAt = g.time; honor = 'metro'; }
   if (rankUp && rankIndex(g) === RESIDENCE && g.castleAt == null) { g.castleAt = g.time; honor = 'castle'; }

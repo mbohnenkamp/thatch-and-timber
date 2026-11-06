@@ -41,7 +41,8 @@ export function saveGame(game) {
     const list = readList().filter((s) => s.id !== game.saveId);
     list.push({
       id: game.saveId, map: game.mapType, size: game.size, year: game.season.year,
-      settlers: game.settlers.length, rank: rankOf(game), savedAt: Date.now(),
+      settlers: game.settlers.length, rank: rankOf(game), savedAt: Date.now(), town: game.townName,
+      ...(game.campaign && { chapter: game.campaign.chapter + 1 }),
     });
     localStorage.setItem(LIST_KEY, JSON.stringify(list));
     return true;
@@ -56,6 +57,21 @@ export function loadGame(id) {
   return g;
 }
 
+const AUTO_KEY = 'siedler-dorf-autostart';
+export function setAutostart(id) {
+  try { localStorage.setItem(AUTO_KEY, String(id)); } catch { /* egal */ }
+}
+// Einmalig: Id des Spielstands, der ohne Menü starten soll
+export function takeAutostart() {
+  try {
+    const id = Number(localStorage.getItem(AUTO_KEY));
+    localStorage.removeItem(AUTO_KEY);
+    return id && localStorage.getItem(DATA_KEY(id)) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
 export function deleteSave(id) {
   try {
     localStorage.removeItem(DATA_KEY(id));
@@ -67,8 +83,8 @@ export function describeSave(s) {
   const size = Object.values(MAP_SIZES).find((m) => m.size === s.size)?.name || '';
   const when = new Date(s.savedAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   return {
-    title: `${MAPS[s.map]?.name || s.map}${size ? ` · ${size}` : ''}`,
-    detail: [s.rank, `Jahr ${s.year}`, `${s.settlers} Siedler`].filter(Boolean).join(' · '),
+    title: `${s.chapter ? `Kapitel ${s.chapter}: ` : ''}${MAPS[s.map]?.name || s.map}${size ? ` · ${size}` : ''}`,
+    detail: [s.town, s.rank, `Jahr ${s.year}`, `${s.settlers} Siedler`].filter(Boolean).join(' · '),
     when: `gespeichert ${when}`,
   };
 }

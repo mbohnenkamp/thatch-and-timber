@@ -516,6 +516,7 @@ function planProcessor(game, s) {
         if (b.removed || !hasInputs(b) || outputItem(b) !== item) return;
         useInputs(b);
         b.output += outputAmount(b);
+        if (b.trade) game.traded = (game.traded || 0) + outputAmount(b);
       },
     },
   );

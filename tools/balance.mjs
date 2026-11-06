@@ -1,8 +1,9 @@
 // Balancing-Test: ein einfacher Testspieler spielt ohne Grafik und misst, wie das Spiel läuft.
 // Aufruf: node tools/balance.mjs [Karte] [Jahre] [Seed]   z. B. node tools/balance.mjs forest 3 42
 import { Game } from '../src/game.js';
-import { SEASON_LENGTH } from '../src/config.js';
-import { GOALS, rankOf } from '../src/goals.js';
+import { SEASON_LENGTH, MAPS } from '../src/config.js';
+import { CHAPTERS } from '../src/campaign.js';
+import { goalsOf, rankOf } from '../src/goals.js';
 import { makeBot } from './bot.mjs';
 import { isSite } from '../src/entities/buildings.js';
 
@@ -11,7 +12,10 @@ const years = Number(process.argv[3] || 3);
 const seed = Number(process.argv[4] || 42);
 const size = Number(process.argv[5] || 128);
 
-const g = Game.create(map, seed, size);
+// Kampagnenkarte: Kapitel aus einer gedachten Residenzstadt mit 150 Siedlern und je 200 Waren
+const mother = { townName: 'Rosenberg', seed: 7, size, campaign: null, settlers: { length: 150 }, total: () => 200 };
+const g = MAPS[map].campaign ? Game.createChapter(mother, CHAPTERS.findIndex((c) => c.map === map), seed) : Game.create(map, seed, size);
+const GOALS = goalsOf(g);
 const STEP = 0.1;
 const { think, log, note, fmt } = makeBot(g);
 
@@ -39,6 +43,7 @@ for (const [text, t] of goalAt) console.log(`  ${fmt(t)}  ${text}`);
 const open = GOALS.slice(goalAt.length).map((x) => x.text);
 if (open.length) console.log(`  offen: ${open.join(' | ')}`);
 console.log(`\nHunger gesamt ${(hungry / 60).toFixed(1)} min, davon im Winter ${(hungryWinter / 60).toFixed(1)} min; kleinster Nahrungsvorrat nach 10 min: ${minFood}`);
+if (g.campaign) console.log(`Kapitel ${g.campaign.chapter + 1} (${g.townName}), Start mit ${JSON.stringify(g.campaign.heritage)}${g.campaign.doneAt != null ? `, geschafft nach ${fmt(g.campaign.doneAt)}` : ', nicht geschafft'}; getauscht ${Math.round(g.traded)}`);
 console.log(`Zufriedenheit am Ende ${Math.round(g.happiness)} %`);
 console.log(`Ende: ${g.settlers.length} Siedler, Wohnraum ${g.housing}, Gebäude ${g.buildings.length}, Stufe ${rankOf(g)}`);
 const sites = g.buildings.filter((b) => isSite(b));

@@ -3,7 +3,8 @@ import { Game } from './game.js';
 import { Renderer } from './render/scene.js';
 import { Hud, showMenu } from './ui/hud.js';
 import { setupInput } from './input.js';
-import { saveGame, loadGame, listSaves, describeSave, deleteSave, canCreate, newSaveId, MAX_SAVES } from './save.js';
+import { saveGame, loadGame, listSaves, describeSave, deleteSave, canCreate, newSaveId, MAX_SAVES, takeAutostart, setAutostart } from './save.js';
+import { nextChapter } from './campaign.js';
 import { audio } from './audio.js';
 import { Advisor } from './ui/tips.js';
 import { Intro, introDone } from './ui/intro.js';
@@ -72,7 +73,10 @@ const whenReady = (fn) => async (...args) => {
   if (await assetsReady) fn(...args);
 };
 
-showMenu(app, {
+// Nach „Siedler aussenden“ lädt die Seite neu und startet gleich das neue Kapitel
+const auto = takeAutostart();
+if (auto) whenReady(() => start(loadGame(auto), true))();
+else showMenu(app, {
   saves: { max: MAX_SAVES, list: listSaves().map((s) => ({ id: s.id, ...describeSave(s) })) },
   canCreate,
   onStart: whenReady((mapType, seed, size) => {
@@ -126,12 +130,13 @@ function start(game, isNew = false) {
     onMenu: () => { saveGame(game); location.reload(); },
     onAction: (act, b) => {
       audio.play('click');
-      if (act === 'demolish') {
+      if (act === 'sendout') sendOut();
+      else if (act === 'demolish') {
         game.demolish(b);
         select(null);
       } else if (act === 'upgrade') game.startUpgrade(b);
       else if (act === 'cancel-upgrade') game.cancelUpgrade(b);
-      else if (act.startsWith('honor')) hud.showHonor(game, { honor: 'city', 'honor-metro': 'metro', 'honor-castle': 'castle' }[act]);
+      else if (act.startsWith('honor')) hud.showHonor(game, { honor: 'city', 'honor-metro': 'metro', 'honor-castle': 'castle', 'honor-chapter': 'chapter' }[act]);
       else if (act.startsWith('give:') || act.startsWith('get:')) {
         const [side, item] = act.split(':');
         const next = { ...(b.trade || b.pending), [side]: item };
@@ -156,6 +161,18 @@ function start(game, isNew = false) {
       return settingsState();
     },
   });
+  // Neue Siedlung als eigener Spielstand; die alte Stadt wird gespeichert und bleibt spielbar
+  function sendOut() {
+    const ch = nextChapter(game);
+    if (ch == null) return;
+    if (!canCreate()) { hud.toast(`Alle ${MAX_SAVES} Plätze für Spielstände sind belegt. Lösche im Menü zuerst einen.`); return; }
+    saveGame(game);
+    const next = Game.createChapter(game, ch, Math.floor(Math.random() * 1e9));
+    next.saveId = newSaveId();
+    if (!saveGame(next)) { hud.toast('Speichern fehlgeschlagen'); return; }
+    setAutostart(next.saveId);
+    location.reload();
+  }
   const settingsState = () => ({ sound: audio.soundOn, music: audio.musicOn, tips: advisor.on, ...settings });
 
   const advisor = new Advisor(app, {
@@ -166,7 +183,8 @@ function start(game, isNew = false) {
       select({ kind: 'building', ref: b });
     },
   });  // Einführung nur beim allerersten neuen Spiel; der Willkommens-Tipp steckt schon darin
-  const intro = isNew && !introDone() ? new Intro(app, hud) : null;
+  const intro = isNew && !game.campaign && !introDone() ? new Intro(app, hud) : null;
+  if (isNew && game.campaign) hud.showChapter(game);
   if (intro) {
     advisor.prefs.seen.controls = true;
     advisor.save();

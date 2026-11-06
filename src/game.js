@@ -1,4 +1,5 @@
 import { updateGoals } from './goals.js';
+import { CHAPTERS, heritageOf, crestOf } from './campaign.js';
 import { generateWorld } from './world/terrain.js';
 import { seasonAt } from './seasons.js';
 import { updateResources, harvest } from './world/resources.js';
@@ -8,7 +9,7 @@ import {
 } from './entities/buildings.js';
 import { updateEconomy, updateWarmth } from './economy.js';
 import { updateHappiness } from './happiness.js';
-import { FEST_TIME, START, BUILDINGS, WORK_RADIUS, ITEMS, GRAIN_GROW_TIME, FOOD_VALUE, ROAD, CART, ORCHARD, BEES } from './config.js';
+import { FEST_TIME, START, MAPS, BUILDINGS, WORK_RADIUS, ITEMS, GRAIN_GROW_TIME, FOOD_VALUE, ROAD, CART, ORCHARD, BEES } from './config.js';
 
 const ITEM_KEYS = Object.keys(ITEMS);
 const NAME_A = ['Eichen', 'Birken', 'Linden', 'Buchen', 'Tannen', 'Hasel', 'Erlen', 'Weiden', 'Mühl', 'Stein', 'Rosen', 'Falken', 'Hirsch', 'Kranich', 'Wolfs', 'Sonnen'];
@@ -40,6 +41,8 @@ export class Game {
     this.cityAt = null;
     this.metroAt = null;
     this.castleAt = null;
+    this.campaign = null;
+    this.traded = 0;
     this.territoryStamp = 0;
     this.happiness = 50;
     this.warmth = 0;
@@ -54,6 +57,7 @@ export class Game {
 
   // Ortsname aus dem Seed: gleiche Karte, gleicher Name
   get townName() {
+    if (this.campaign) return this.campaign.name;
     const n = Math.abs(Math.floor(this.seed));
     return NAME_A[n % NAME_A.length] + NAME_B[Math.floor(n / NAME_A.length) % NAME_B.length];
   }
@@ -96,13 +100,30 @@ export class Game {
     return x >= 0 && z >= 0 && x < this.size && z < this.size && this.territory[z * this.size + x] === 1;
   }
 
-  static create(mapType, seed, size = 64) {
+  // Wappen der Gründerstadt; Kampagnenstädte tragen das Wappen ihrer Mutterstadt
+  get crest() { return crestOf(this.campaign ? this.campaign.crestSeed : this.seed); }
+
+  static create(mapType, seed, size = 64, heritage = null) {
     const g = new Game(mapType, seed, size);
     const wh = g.addBuilding('warehouse', g.start.x, g.start.z, true);
     Object.assign(wh.stock, START.stock);
+    for (const [k, n] of Object.entries(heritage?.stock || {})) wh.stock[k] = (wh.stock[k] || 0) + n;
     const spot = g.findSpotNear('builderhut', wh);
     if (spot) g.addBuilding('builderhut', spot.x, spot.z, true);
-    for (let i = 0; i < START.settlers; i++) g.spawnSettler(wh);
+    for (let i = 0; i < (heritage?.settlers || START.settlers); i++) g.spawnSettler(wh);
+    return g;
+  }
+
+  // Siedler aussenden: neues Kapitel auf eigener Karte, mit Erbe, Name und Wappen der Mutterstadt
+  static createChapter(mother, chapter, seed) {
+    const ch = CHAPTERS[chapter];
+    const heritage = heritageOf(mother);
+    const founder = mother.campaign?.founder || mother.townName;
+    const g = Game.create(ch.map, seed, mother.size, heritage);
+    g.campaign = {
+      chapter, founder, name: `${ch.prefix}${founder}`, crestSeed: mother.campaign ? mother.campaign.crestSeed : mother.seed,
+      mother: mother.townName, heritage, doneAt: null,
+    };
     return g;
   }
 
@@ -444,7 +465,7 @@ export class Game {
         continue;
       }
       if (f.state !== 'growing') continue;
-      f.growth = Math.min(1, f.growth + (dt * this.season.grain * boost) / GRAIN_GROW_TIME);
+      f.growth = Math.min(1, f.growth + (dt * this.season.grain * boost * (MAPS[this.mapType].grain ?? 1)) / GRAIN_GROW_TIME);
       if (f.growth >= 1) f.state = 'ripe';
     }
   }
@@ -735,6 +756,8 @@ export class Game {
       cityAt: this.cityAt,
       metroAt: this.metroAt,
       castleAt: this.castleAt,
+      ...(this.campaign && { campaign: this.campaign }),
+      ...(this.traded && { traded: Math.round(this.traded) }),
       happiness: Math.round(this.happiness),
       warmth: this.warmth,
       clothGot: this.clothGot,
@@ -770,6 +793,8 @@ export class Game {
     g.cityAt = d.cityAt ?? null;
     g.metroAt = d.metroAt ?? null;
     g.castleAt = d.castleAt ?? null;
+    g.campaign = d.campaign || null;
+    g.traded = d.traded || 0;
     g.happiness = d.happiness ?? 50;
     g.warmth = d.warmth || 0;
     g.clothGot = d.clothGot || 0;

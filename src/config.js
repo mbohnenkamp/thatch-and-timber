@@ -1,4 +1,4 @@
-export const VERSION = '6.3';
+export const VERSION = '7.0';
 export const ISSUES_URL = 'https://github.com/mbohnenkamp/thatch-and-timber/issues/new';
 
 // Kartengrößen in Feldern; alte Spielstände ohne Angabe sind 64
@@ -264,5 +264,13 @@ export const MAPS = {
     waterLevel: 1.0, forestThreshold: 0.58, treeDensity: 0.55,
     rockHeight: 99, rockDensity: 0, rockScatter: 0.004, berry: 0.045, fish: 0.3,
     grass: ['#78b04c', '#5a9440'], sky: '#cfe6f2',
+  },
+  // Kampagnenkarten (V7): nur über „Siedler aussenden“, nicht im Startmenü
+  pass: {
+    name: 'Bergpass', campaign: true, grain: 0.6,
+    desc: 'Ein enges Tal zwischen hohen Bergen. Viel Erz und Kohle, karger Boden: Getreide wächst langsamer.',
+    waterLevel: 0.9, forestThreshold: 0.5, treeDensity: 0.45,
+    rockHeight: 4.2, rockDensity: 0.22, rockScatter: 0.01, berry: 0.012, fish: 0.3,
+    grass: ['#7d9a4d', '#5b7a3c'], sky: '#c3d2e0',
   },
 };

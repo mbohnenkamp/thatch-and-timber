@@ -1,7 +1,7 @@
 // Testspieler: baut nach fester Liste, ergänzt Nahrung, Türme und Ausbauten.
 // Wird vom Balancing-Test (Node) und im Browser für Probeläufe benutzt.
 import { BUILDINGS, SEASON_LENGTH } from '../src/config.js';
-import { isUnlocked } from '../src/goals.js';
+import { isUnlocked, currentGoal } from '../src/goals.js';
 import { isSite, upgradeCost } from '../src/entities/buildings.js';
 
 export function makeBot(g) {
@@ -81,14 +81,28 @@ export function makeBot(g) {
     const markets = of('market');
     markets.forEach((m, i) => {
       if (!m.done) return;
-      const want = markets.length > 1 ? (i ? 'stone' : 'iron') : g.total('stone') < 50 && g.total('iron') >= 8 ? 'stone' : 'iron';
-      if (m.trade?.get !== want) { g.setTrade(m, 'wood', want); note(`Markt tauscht Holz gegen ${want === 'stone' ? 'Stein' : 'Eisen'}`); }
+      const noTools = g.total('tools') <= 3 && !of('toolmaker').some((b) => b.done && b.workers.length);
+      const want = noTools && i === 0 ? 'tools' : markets.length > 1 ? (i ? 'stone' : 'iron') : g.total('stone') < 50 && g.total('iron') >= 8 ? 'stone' : 'iron';
+      if (m.trade?.get !== want) { g.setTrade(m, 'wood', want); note(`Markt tauscht Holz gegen ${{ stone: 'Stein', iron: 'Eisen', tools: 'Werkzeug' }[want]}`); }
     });
     if (openSites() >= 2) return;
     // Werkzeug wird knapp und keine Schmelze läuft: Markt bauen
     if (g.total('tools') <= 3 && isUnlocked(g, 'market') && !of('market').length && !of('smelter').some((b) => b.done && b.workers.length) && g.canAfford(BUILDINGS.market.cost)) {
       const s = spot('market');
       if (s) { g.place('market', s.x, s.z); note('baut Markt (Werkzeug knapp)'); return; }
+    }
+    // Kampagne: Kapitelziele verlangen Markt und viel Eisen
+    const goalText = currentGoal(g)?.text || '';
+    if (g.campaign && !markets.length && g.settlers.length >= 15 && g.canAfford(BUILDINGS.market.cost)) {
+      const s = spot('market');
+      if (s) { g.place('market', s.x, s.z); note('baut Markt (Kapitel)'); return; }
+    }
+    if (g.campaign && /Schmelzhütten/.test(goalText) && of('smelter').length < 3 && !of('smelter').some(isSite)) {
+      for (const t of ['oremine', 'coalmine', 'smelter']) {
+        if (of(t).length >= of('smelter').length + 1 || !g.canAfford(BUILDINGS[t].cost)) continue;
+        const s = spot(t);
+        if (s) { g.place(t, s.x, s.z); note(`baut ${BUILDINGS[t].name} (Kapitelziel)`); return; }
+      }
     }
     // Wie ein Spieler: freie Hände und schrumpfende Nahrung -> neue Nahrungshütte
     if (g.freeCount >= 3 && g.available('tools') > 0 && (g.foodRising === false || g.foodPoints() < g.settlers.length) && next > 6) {
@@ -133,12 +147,13 @@ export function makeBot(g) {
       if (s) { g.place(t, s.x, s.z); note(`baut ${of(t).length + 1}. ${t === 'warehouse' ? 'Lagerhaus' : 'Bauhütte'}`); return; }
     }
     // Als Stadt: Rathaus, dann (ab 100 Siedlern) das Denkmal
-    if (isUnlocked(g, 'townhall') && markets.length === 1 && g.canAfford(BUILDINGS.market.cost)) {
+    const cityLike = !g.campaign || g.settlers.length >= 60;
+    if (cityLike && isUnlocked(g, 'townhall') && markets.length === 1 && g.canAfford(BUILDINGS.market.cost)) {
       const s = spot('market');
       if (s) { g.place('market', s.x, s.z); note('baut zweiten Markt'); return; }
     }
     for (const t of ['townhall', 'monument', 'castle']) {
-      if (!isUnlocked(g, t) || of(t).length || (t === 'monument' && g.settlers.length < 100) || !g.canAfford(BUILDINGS[t].cost)) continue;
+      if (!cityLike || !isUnlocked(g, t) || of(t).length || (t === 'monument' && g.settlers.length < 100) || !g.canAfford(BUILDINGS[t].cost)) continue;
       const s = spot(t);
       if (s) { g.place(t, s.x, s.z); note(`baut ${BUILDINGS[t].name}`); return; }
     }

@@ -32,6 +32,7 @@ const TREE_VARIANTS = {
   forest: ['custom/tree_a', 'custom/tree_b', 'custom/tree_c', 'custom/pine_a', 'custom/pine_b'],
   mountains: ['custom/pine_a', 'custom/pine_b', 'custom/pine_c'],
   river: ['custom/tree_a', 'custom/tree_b', 'custom/tree_c'],
+  pass: ['custom/pine_a', 'custom/pine_b', 'custom/pine_c', 'custom/pine_a', 'custom/tree_b'],
 };
 // Grenzpfosten: heller Pfahl mit blauer Spitze
 const BORDER_POST = (() => {

@@ -325,6 +325,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   width: min(420px, 100%); background: var(--panel); border: 3px solid var(--accent); border-radius: 14px;
   padding: 18px 22px; text-align: center; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
 }
+#honor .crest { width: 48px; height: 48px; display: block; margin: 0 auto 4px; }
+#goal { padding-right: 38px; }
+#goal .crest-slot { position: absolute; right: 7px; top: 6px; }
+#goal .crest { width: 26px; height: 26px; display: block; }
 #honor h2 { font-family: Georgia, serif; color: var(--accent); margin: 0 0 4px; font-size: 26px; }
 #honor .town { font-size: 17px; font-weight: 700; margin: 0 0 12px; }
 #honor dl { display: grid; grid-template-columns: auto auto; gap: 4px 14px; text-align: left; margin: 0 auto 12px; width: fit-content; }

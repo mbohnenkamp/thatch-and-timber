@@ -2,6 +2,7 @@ import { SEASON_LENGTH, BUILD_GROUPS, TRADE_VALUE, NO_TOOL_JOBS, MAP_SIZES, DEFA
 
 const ROAD_ICON = '<svg viewBox="0 0 32 32"><path d="M6 28L13 4h6l7 24z" fill="#9b9384"/><path d="M15.2 8h1.6l.4 4h-2.4zM14.6 16h2.8l.5 5h-3.8z" fill="#efe6d2"/></svg>';
 import { currentGoal, rankOf, isUnlocked, RANKS } from '../goals.js';
+import { CHAPTERS, crestSvg, canSendOut, nextChapter, chapterPending } from '../campaign.js';
 import { happinessParts, happinessTarget, happinessFactor } from '../happiness.js';
 import { siteCost, siteCap, upgradeCost, slots, housingOf, nearWell, outputItem, outputCap, recipe, tradeRate, workSpeed } from '../entities/buildings.js';
 
@@ -39,6 +40,8 @@ export function feedbackUrl(game) {
   return `${ISSUES_URL}?${q}`;
 }
 
+const sendLabel = (game) => { const n = nextChapter(game); return `Siedler aussenden: Kapitel ${n + 1}, ${CHAPTERS[n].name}`; };
+
 const costText = (cost) => Object.entries(cost).map(([k, v]) => `${v} ${ITEMS[k]}`).join(', ');
 
 export function showMenu(root, { saves, canCreate, onStart, onContinue, onDelete, preview }) {
@@ -53,7 +56,7 @@ export function showMenu(root, { saves, canCreate, onStart, onContinue, onDelete
         ${Object.entries(MAP_SIZES).map(([k, m]) => `<button data-size="${k}">${m.name} <small>${m.size}×${m.size}</small></button>`).join('')}
       </div>
       <div class="maps">
-        ${Object.entries(MAPS).map(([k, m]) => `
+        ${Object.entries(MAPS).filter(([, m]) => !m.campaign).map(([k, m]) => `
           <button class="map-card" data-map="${k}">
             <span class="map-pic loading"><span class="reroll" data-reroll="${k}" title="Andere Karte">Andere Karte</span></span>
             <strong>${m.name}</strong>
@@ -86,7 +89,7 @@ export function showMenu(root, { saves, canCreate, onStart, onContinue, onDelete
   let run = 0;
   const showAll = async () => {
     const mine = ++run;
-    for (const map of Object.keys(MAPS)) {
+    for (const map of Object.keys(MAPS).filter((k) => !MAPS[k].campaign)) {
       if (mine !== run) return;
       seeds[map] ??= newSeed();
       await showPreview(map);
@@ -199,7 +202,7 @@ export class Hud {
         <a class="feedback" target="_blank" rel="noopener">Feedback geben</a>
         <small class="feedback-note">Öffnet GitHub (Konto nötig). Spielstand wird mitgeschickt.</small>
       </div>
-      <div id="goal"><b></b><span></span><small></small><i><u></u></i></div>
+      <div id="goal"><em class="crest-slot"></em><b></b><span></span><small></small><i><u></u></i></div>
       <div id="info" hidden></div>
       <div id="hint" hidden></div>
       <div id="toasts"></div>
@@ -288,14 +291,20 @@ export class Hud {
     const HONOR = {
       city: { at: game.cityAt, rank: 'Stadt', text: 'Du kannst weiterspielen. Neu freigeschaltet: Rathaus und Denkmal. Das Denkmal macht die Stadt zur Großstadt.' },
       metro: { at: game.metroAt, rank: 'Großstadt', text: 'Neu freigeschaltet: die Burg. Baue sie auf einer Anhöhe in drei Abschnitten, dann wird deine Stadt zur Residenzstadt.' },
-      castle: { at: game.castleAt, rank: 'Residenzstadt', text: 'Alle Aufgaben sind erfüllt. Du kannst weiterspielen und deine Stadt ausbauen.' },
+      castle: { at: game.castleAt, rank: 'Residenzstadt', text: 'Alle Aufgaben sind erfüllt. Du kannst weiterspielen und deine Stadt ausbauen, oder Siedler aussenden und eine neue Stadt gründen. Die Residenzstadt bleibt als Spielstand erhalten.' },
+      chapter: game.campaign && {
+        at: game.campaign.doneAt, rank: rankOf(game), label: 'Kapitel geschafft nach',
+        title: `${game.townName} hat Kapitel ${game.campaign.chapter + 1} geschafft!`,
+        text: chapterPending(game) ? 'Das ist bisher das letzte Kapitel. Das nächste kommt mit einer späteren Version, bis dahin kannst du hier weiterbauen.'
+          : 'Du kannst weiterbauen oder Siedler aussenden und das nächste Kapitel beginnen. Diese Stadt bleibt als Spielstand erhalten.',
+      },
     }[kind];
     const t = HONOR.at ?? game.time;
     const days = Math.max(1, Math.round(t / (SEASON_LENGTH / 2)));
     const size = Object.values(MAP_SIZES).find((m) => m.size === game.size)?.name || '';
     const rows = [
       ['Karte', `${MAPS[game.mapType].name}${size ? `, ${size}` : ''}`],
-      [`${HONOR.rank} nach`, `${days} Spieltag${days === 1 ? '' : 'en'} (Jahr ${Math.floor(t / SEASON_LENGTH / 4) + 1})`],
+      [HONOR.label || `${HONOR.rank} nach`, `${days} Spieltag${days === 1 ? '' : 'en'} (Jahr ${Math.floor(t / SEASON_LENGTH / 4) + 1})`],
       ['Spielzeit bei 1×', minutes(t)],
       ['Siedler', game.settlers.length],
       ['Gebäude', game.buildings.filter((b) => b.done && !b.removed).length],
@@ -304,11 +313,33 @@ export class Hud {
     const el = document.createElement('div');
     el.id = 'honor';
     el.innerHTML = `<div class="card">
+      ${crestSvg(game.crest)}
       <h2>Ehrentafel</h2>
-      <p class="town">${game.townName} ist eine ${HONOR.rank}!</p>
+      <p class="town">${HONOR.title || `${game.townName} ist eine ${HONOR.rank}!`}</p>
       <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
       <p>${HONOR.text}</p>
-      <button class="btn">Weiterspielen</button>
+      ${(kind === 'castle' || kind === 'chapter') && canSendOut(game) ? `<button class="btn" data-a="send">${sendLabel(game)}</button>` : ''}
+      <button class="btn secondary" data-a="close">Weiterspielen</button>
+    </div>`;
+    el.querySelector('[data-a=close]').onclick = () => el.remove();
+    const send = el.querySelector('[data-a=send]');
+    if (send) send.onclick = () => { el.remove(); this.h.onAction('sendout', null); };
+    this.el.appendChild(el);
+  }
+
+  // Neues Kapitel: was die Karte ausmacht und was die Mutterstadt mitgegeben hat
+  showChapter(game) {
+    const c = game.campaign, ch = CHAPTERS[c.chapter];
+    const gifts = [`${c.heritage.settlers} Siedler`, ...Object.entries(c.heritage.stock).map(([k, n]) => `${n} ${ITEMS[k]}`)];
+    const el = document.createElement('div');
+    el.id = 'honor';
+    el.innerHTML = `<div class="card">
+      ${crestSvg(game.crest)}
+      <h2>Kapitel ${c.chapter + 1}: ${ch.name}</h2>
+      <p class="town">Siedler aus ${c.mother} gründen ${game.townName}</p>
+      <p>${ch.intro}</p>
+      <p><em>Mitgegeben:</em> ${gifts.join(', ')}. Alle Gebäude bis zur Großstadt kannst du sofort bauen, die Stufen wachsen mit den Kapitelzielen.</p>
+      <button class="btn">Los geht's</button>
     </div>`;
     el.querySelector('button').onclick = () => el.remove();
     this.el.appendChild(el);
@@ -371,16 +402,20 @@ export class Hud {
       + happinessParts(game).filter(([, v]) => v).map(([k, v]) => `${v > 0 ? '+' : ''}${v}  ${k}`).join('\n');
     this.hunger.hidden = !game.hungry;
     const goal = currentGoal(game);
+    const slot = this.goalEl.querySelector('.crest-slot');
+    if (!slot.innerHTML) slot.innerHTML = crestSvg(game.crest);
     this.goalEl.querySelector('b').textContent = rankOf(game);
+    const chapter = game.campaign && `Kapitel ${game.campaign.chapter + 1}: ${CHAPTERS[game.campaign.chapter].name}`;
     if (goal) {
       const [have, need] = goal.progress(game);
       this.goalEl.querySelector('span').textContent = `${goal.text} (${Math.min(have, need)}/${need})`;
-      const next = goal.rank > RANKS.indexOf(rankOf(game)) ? Object.keys(BUILDINGS).filter((t) => BUILDINGS[t].unlock === goal.rank) : [];
-      this.goalEl.querySelector('small').textContent = next.length ? `Danach ${RANKS[goal.rank]}: ${next.map((t) => BUILDINGS[t].name).join(', ')}` : '';
+      const next = !game.campaign && goal.rank > RANKS.indexOf(rankOf(game)) ? Object.keys(BUILDINGS).filter((t) => BUILDINGS[t].unlock === goal.rank) : [];
+      this.goalEl.querySelector('small').textContent = chapter || (next.length ? `Danach ${RANKS[goal.rank]}: ${next.map((t) => BUILDINGS[t].name).join(', ')}` : '');
       this.goalEl.querySelector('u').style.width = `${Math.min(1, have / need) * 100}%`;
     } else {
-      this.goalEl.querySelector('span').textContent = 'Alle Aufgaben erfüllt!';
-      this.goalEl.querySelector('small').textContent = '';
+      this.goalEl.querySelector('span').textContent = game.campaign ? `${chapter} geschafft!` : 'Alle Aufgaben erfüllt!';
+      this.goalEl.querySelector('small').textContent = canSendOut(game) ? `Neue Siedlung gründen: „Siedler aussenden“ ${game.campaign ? 'im Lagerhaus' : 'in der Burg'}`
+        : chapterPending(game) ? 'Das nächste Kapitel kommt mit einer späteren Version.' : '';
       this.goalEl.querySelector('u').style.width = '100%';
     }
     const bar = this.el.querySelector('#topbar');
@@ -582,6 +617,11 @@ export class Hud {
     if (ref.type === 'castle' && ref.done) {
       p.push(`<p><em>Bauabschnitt:</em> ${def.stages.slice(0, ref.level).join(', ')}${ref.level < def.stages.length ? ` · noch offen: ${def.stages.slice(ref.level).join(', ')}` : ' · fertig'}</p>`);
       if (game.castleAt != null) p.push('<button class="secondary" data-act="honor-castle">Ehrentafel ansehen</button>');
+      if (canSendOut(game)) p.push(`<button data-act="sendout">${sendLabel(game)}</button>`);
+    }
+    if (ref.type === 'warehouse' && game.campaign?.doneAt != null && game.warehouses[0] === ref) {
+      p.push('<button class="secondary" data-act="honor-chapter">Ehrentafel ansehen</button>');
+      if (canSendOut(game)) p.push(`<button data-act="sendout">${sendLabel(game)}</button>`);
     }
     if (def.territory) p.push(`<p><em>Gebiet:</em> Radius ${def.territory[ref.level - 1]} Felder</p>`);
     if (ref.type === 'well') {
