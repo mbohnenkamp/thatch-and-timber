@@ -27,7 +27,15 @@ export class PostFX {
     this.composer.setSize(w, h);
   }
 
-  render() { this.composer.render(); }
+  // Die Schattenkarte nur im ersten Durchgang zeichnen. Ohne das rechnet three.js sie im GTAO-Durchgang
+  // ein zweites Mal (jedes render() aktualisiert Schatten), das kostete im großen Dorf ~2.600 Zeichenaufrufe je Bild.
+  render() {
+    const shadows = this.renderer.shadowMap;
+    shadows.autoUpdate = false;
+    shadows.needsUpdate = true;
+    this.composer.render();
+    shadows.autoUpdate = true;
+  }
 }
 
 const smooth = (a, b, t) => {
