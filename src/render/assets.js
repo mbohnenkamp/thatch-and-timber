@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 // Modelle von Kenney (kenney.nl), Lizenz CC0 — siehe public/models/*/License.txt
@@ -31,7 +32,7 @@ const clips = {};
 const flat = {};
 
 export async function loadAssets(onProgress) {
-  const loader = new GLTFLoader();
+  const loader = new GLTFLoader().setDRACOLoader(new DRACOLoader());
   const jobs = Object.entries(LIST).flatMap(([dir, names]) => names.map((n) => `${dir}/${n}`));
   let done = 0;
   await Promise.all(jobs.map(async (key) => {
